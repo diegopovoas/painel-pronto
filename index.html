@@ -72,6 +72,20 @@ tbody tr:hover{background:var(--glass)}
 .tag{display:inline-block;background:rgba(61,123,255,.13);color:var(--blue);border:1px solid rgba(61,123,255,.30);border-radius:6px;padding:1px 6px;font-size:.66rem;margin:1px}
 .aging-ok{color:var(--ok)}.aging-warn{color:var(--warn)}.aging-bad{color:var(--red);font-weight:700}
 
+/* Barra de filtros (multi-seleção) */
+.fbar{background:var(--glass);border:1px solid var(--glassb);border-radius:16px;padding:.85rem;display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:.6rem;margin-bottom:1rem;backdrop-filter:blur(18px);position:relative;z-index:200}
+.fbar label{display:block;font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.25rem}
+.fbar select{width:100%;background:var(--elev);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:.5rem .55rem;font-size:.8rem}
+.ms{position:relative}.ms.aberto{z-index:300}
+.ms-btn{width:100%;text-align:left;background:var(--elev);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:.5rem .55rem;font-size:.8rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:.3rem}
+.ms-btn:hover{border-color:var(--navy2)}.ms-btn .cnt{background:var(--blue);color:#fff;border-radius:20px;font-size:.62rem;padding:1px 7px;font-weight:700}
+.ms-panel{position:absolute;z-index:300;top:calc(100% + 4px);left:0;right:0;max-height:240px;overflow:auto;background:var(--elev);border:1px solid var(--border);border-radius:10px;padding:.3rem;box-shadow:var(--shadow);display:none}
+.ms-panel.open{display:block}.ms-opt{display:flex;align-items:center;gap:.45rem;padding:.35rem .45rem;border-radius:6px;cursor:pointer;font-size:.78rem}
+.ms-opt:hover{background:var(--glass)}.ms-opt input{accent-color:var(--blue)}
+.fclear{background:rgba(207,25,15,.1);border:1px solid rgba(207,25,15,.35);color:#ff8a82;border-radius:8px;padding:.5rem;font-size:.78rem;font-weight:600;cursor:pointer}
+.loading{position:fixed;top:60px;right:18px;background:var(--navy2);color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;z-index:550;display:none}
+
 /* Usuários */
 #usuarios{position:fixed;inset:0;background:var(--bg);z-index:600;overflow:auto;padding:24px}
 .umax{max-width:1000px;margin:0 auto}
@@ -112,7 +126,18 @@ tbody tr:hover{background:var(--glass)}
       <button class="tbtn red" onclick="sair()">Sair</button>
     </div>
   </div>
+  <div class="loading" id="loading">atualizando...</div>
   <div class="wrap">
+    <div class="fbar" id="fbar">
+      <div><label>Período</label><select id="f_periodo"><option value="0">Tudo</option><option value="1">Hoje</option><option value="7">Últimos 7 dias</option><option value="30">Últimos 30 dias</option></select></div>
+      <div class="ms" data-key="produto"><label>Produto</label></div>
+      <div class="ms" data-key="banco"><label>Banco</label></div>
+      <div class="ms" data-key="campanha"><label>Campanha</label></div>
+      <div class="ms" data-key="status"><label>Status</label></div>
+      <div class="ms" data-key="fase"><label>Fase</label></div>
+      <div class="ms" data-key="tag"><label>Etiqueta</label></div>
+      <div style="align-self:end"><button class="fclear" style="width:100%" onclick="limparFiltros()">Limpar filtros</button></div>
+    </div>
     <div class="tabs">
       <div class="tab active" data-v="ger" onclick="setView('ger')"><i data-lucide="bar-chart-3"></i>Gerencial</div>
       <div class="tab" data-v="ope" onclick="setView('ope')"><i data-lucide="list-checks"></i>Operacional</div>
@@ -143,11 +168,7 @@ tbody tr:hover{background:var(--glass)}
       <div class="card full">
         <h3><i data-lucide="table"></i>Atendimentos recentes</h3>
         <div class="opfilters">
-          <input id="o_busca" placeholder="🔎 cliente ou CPF...">
-          <select id="o_prod"><option value="">Produto: todos</option></select>
-          <select id="o_status"><option value="">Status: todos</option></select>
-          <select id="o_stage"><option value="">Fase: todas</option></select>
-          <select id="o_tag"><option value="">Etiqueta: todas</option></select>
+          <input id="o_busca" placeholder="🔎 buscar cliente ou CPF na lista...">
         </div>
         <div class="muted" style="margin-bottom:.5rem"><span id="ope_count"></span> registros recentes</div>
         <div class="tablewrap"><table id="tab_all"><thead><tr><th>Cliente</th><th>CPF</th><th>Produto</th><th>Fase</th><th>Status</th><th>Banco</th><th>Valor líq.</th><th>Etiquetas</th><th>Atualizado</th></tr></thead><tbody></tbody></table></div>
@@ -184,8 +205,10 @@ tbody tr:hover{background:var(--glass)}
 <script>
 const SUPA_URL='https://drokcguxofvmdrnmedrx.supabase.co';
 const ANON='sb_publishable_AhOot6J1thyzjMKzuMqUvw_JfbbNf6m';
+const API_URL='https://24-144-112-34.sslip.io';
 const SESS_KEY='pronto_sess';
-let sess=null, DADOS=null, _lastUpd=null;
+let sess=null, DADOS=null, _lastUpd=null, _filtrosProntos=false;
+const selections={produto:new Set(),banco:new Set(),campanha:new Set(),status:new Set(),fase:new Set(),tag:new Set()};
 function H(t){return {apikey:ANON,'Content-Type':'application/json',...(t?{Authorization:'Bearer '+t}:{})};}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2600);}
 const brl=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -219,19 +242,61 @@ async function refresh(){if(!sess?.rt)return false;
 async function tok(){if(sess&&Date.now()>sess.exp-60000)await refresh();return sess?.t;}
 function sair(){localStorage.removeItem(SESS_KEY);sess=null;location.reload();}
 
-// Carregar dados
+// Monta a query string a partir dos filtros selecionados
+function queryFiltros(){
+  const p=new URLSearchParams();
+  for(const k in selections){ if(selections[k].size) p.set(k,[...selections[k]].join(',')); }
+  const per=document.getElementById('f_periodo'); if(per&&per.value!=='0') p.set('periodo',per.value);
+  return p.toString();
+}
+// Carrega dados da API (filtrados ao vivo no banco)
 async function carregarDados(){
   const t=await tok();
-  const r=await fetch(SUPA_URL+'/rest/v1/painel_vendeai_cache?select=html,atualizado_em&escopo=eq.painel',{headers:H(t)});
-  const j=await r.json();
-  if(!Array.isArray(j)||!j.length){document.getElementById('kpis').innerHTML='<div class="muted">Você não tem acesso ao Painel Pronto. Fale com um administrador.</div>';return;}
-  _lastUpd=j[0].atualizado_em; DADOS=JSON.parse(j[0].html);
-  document.getElementById('lastupd').textContent='● atualizado '+new Date(_lastUpd).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-  renderPainel(); montarFiltrosOpe();
+  const ld=document.getElementById('loading'); ld.style.display='block';
+  try{
+    const r=await fetch(API_URL+'/dados?'+queryFiltros(),{headers:{Authorization:'Bearer '+t}});
+    if(r.status===403){document.getElementById('kpis').innerHTML='<div class="muted">Você não tem acesso ao Painel Pronto. Fale com um administrador.</div>';return;}
+    if(!r.ok) throw new Error('Erro '+r.status);
+    DADOS=await r.json(); _lastUpd=new Date().toISOString();
+    document.getElementById('lastupd').textContent='● atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+    if(DADOS.opcoes && !_filtrosProntos){ montarFiltros(DADOS.opcoes); _filtrosProntos=true; }
+    renderPainel();
+  }catch(ex){ toast('Erro ao carregar: '+ex.message); }
+  finally{ ld.style.display='none'; }
 }
-async function verificar(){try{const t=await tok();
-  const r=await fetch(SUPA_URL+'/rest/v1/painel_vendeai_cache?select=atualizado_em&escopo=eq.painel',{headers:H(t)});
-  const j=await r.json();if(Array.isArray(j)&&j.length&&j[0].atualizado_em!==_lastUpd){await carregarDados();}}catch(e){}}
+async function verificar(){ await carregarDados(); }
+
+// Filtros multi-seleção (dispara recarga da API)
+function montarFiltros(opc){
+  document.querySelectorAll('.fbar .ms').forEach(div=>{
+    const key=div.dataset.key, vals=opc[key]||[];
+    div.insertAdjacentHTML('beforeend',
+      `<button class="ms-btn" type="button"><span class="lbl">Todos</span><span class="cnt" style="display:none">0</span></button>
+       <div class="ms-panel">${vals.map(v=>`<label class="ms-opt"><input type="checkbox" value="${(''+v).replace(/"/g,'&quot;')}"><span>${v}</span></label>`).join('')}</div>`);
+    const btn=div.querySelector('.ms-btn'),panel=div.querySelector('.ms-panel');
+    btn.addEventListener('click',e=>{e.stopPropagation();
+      document.querySelectorAll('.ms-panel.open').forEach(p=>{if(p!==panel){p.classList.remove('open');p.closest('.ms').classList.remove('aberto');}});
+      const a=!panel.classList.contains('open');panel.classList.toggle('open',a);div.classList.toggle('aberto',a);});
+    panel.addEventListener('change',()=>{
+      const sel=[...panel.querySelectorAll('input:checked')].map(i=>i.value);
+      selections[key]=new Set(sel);
+      const cnt=div.querySelector('.cnt'),lbl=div.querySelector('.lbl');
+      if(sel.length){cnt.style.display='';cnt.textContent=sel.length;lbl.textContent=sel.length===1?sel[0]:sel.length+' selec.';}
+      else{cnt.style.display='none';lbl.textContent='Todos';}
+      carregarDados();
+    });
+  });
+  document.addEventListener('click',()=>document.querySelectorAll('.ms-panel.open').forEach(p=>{p.classList.remove('open');p.closest('.ms').classList.remove('aberto');}));
+  document.getElementById('f_periodo').addEventListener('change',carregarDados);
+}
+function limparFiltros(){
+  for(const k in selections) selections[k]=new Set();
+  document.querySelectorAll('.fbar input:checked').forEach(i=>i.checked=false);
+  document.querySelectorAll('.fbar .cnt').forEach(c=>c.style.display='none');
+  document.querySelectorAll('.fbar .lbl').forEach(l=>l.textContent='Todos');
+  document.getElementById('f_periodo').value='0';
+  carregarDados();
+}
 
 // Render
 const C={blue:'#3D7BFF',navy:'#2C4366',blueLt:'#7FA8FF',navyD:'#1A2B40',muted:'#9AA6BA',ok:'#3FB950',warn:'#D29922',red:'#CF190F'};
@@ -280,23 +345,9 @@ function renderPainel(){
   if(window.lucide)lucide.createIcons();
 }
 
-function montarFiltrosOpe(){
-  const uniq=(arr)=>[...new Set(arr)].filter(Boolean).sort();
-  const fill=(id,vals,lbl)=>{const s=document.getElementById(id);s.innerHTML=`<option value="">${lbl}</option>`+vals.map(v=>`<option>${v}</option>`).join('');};
-  fill('o_prod',uniq(DADOS.recentes.map(r=>r.product)),'Produto: todos');
-  fill('o_status',uniq(DADOS.recentes.map(r=>r.status)),'Status: todos');
-  fill('o_stage',uniq(DADOS.recentes.map(r=>r.stage)),'Fase: todas');
-  fill('o_tag',uniq(DADOS.recentes.flatMap(r=>r.tags)),'Etiqueta: todas');
-  ['o_prod','o_status','o_stage','o_tag'].forEach(i=>document.getElementById(i).onchange=renderRecentes);
-  document.getElementById('o_busca').oninput=renderRecentes;
-}
 function renderRecentes(){
   const b=document.getElementById('o_busca').value.toLowerCase().trim();
-  const fp=document.getElementById('o_prod').value,fs=document.getElementById('o_status').value,
-        fst=document.getElementById('o_stage').value,ft=document.getElementById('o_tag').value;
   const R=DADOS.recentes.filter(r=>{
-    if(fp&&r.product!==fp)return false;if(fs&&r.status!==fs)return false;
-    if(fst&&r.stage!==fst)return false;if(ft&&!r.tags.includes(ft))return false;
     if(b&&!((r.cliente||'').toLowerCase().includes(b)||(r.cpf||'').includes(b)))return false;return true;});
   const cls=r=>PAGO.includes(r.status)?'pago':PEND.includes(r.status)?'pend':PERDA.includes(r.status)?'perda':'neutro';
   document.getElementById('ope_count').textContent=R.length.toLocaleString('pt-BR');
@@ -312,8 +363,9 @@ async function carregarPerfil(){const t=await tok();
 async function iniciar(){
   document.getElementById('login').classList.add('hidden');document.getElementById('app').classList.remove('hidden');
   setScale(parseInt(localStorage.getItem('nova_scale')||'100'));
+  document.getElementById('o_busca').oninput=renderRecentes;
   await carregarPerfil();await carregarDados();
-  if(!window._poll)window._poll=setInterval(verificar,60000);}
+  if(!window._poll)window._poll=setInterval(verificar,120000);}
 
 // Usuários (RPC)
 async function rpc(fn,args){const t=await tok();
