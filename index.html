@@ -84,6 +84,7 @@ th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04
   <div class="topbar">
     <div class="brand"><div class="mk">N</div>Painel <span>Pronto</span></div>
     <div class="right">
+      <span id="lastupd" style="font-size:12px;color:var(--muted)"></span>
       <span id="whoami"></span>
       <button class="tbtn" id="btnusers" onclick="abrirUsuarios()" style="display:none">Usuários</button>
       <button class="tbtn red" onclick="sair()">Sair</button>
@@ -160,13 +161,31 @@ async function tok(){ if(sess && Date.now()>sess.exp-60000){ await refresh(); } 
 function sair(){ localStorage.removeItem(SESS_KEY); sess=null; location.reload(); }
 
 // ── Carregar painel ─────────────────────────────────────────────────
+let _lastUpd=null, _blobUrl=null;
 async function carregarPainel(){
   const t=await tok();
-  const r=await fetch(SUPA_URL+'/rest/v1/painel_vendeai_cache?select=html&escopo=eq.painel',{headers:H(t)});
+  const r=await fetch(SUPA_URL+'/rest/v1/painel_vendeai_cache?select=html,atualizado_em&escopo=eq.painel',{headers:H(t)});
   const j=await r.json();
   if(!Array.isArray(j)||!j.length){ document.getElementById('painel').srcdoc='<body style="background:#080B12;color:#9AA6BA;font-family:sans-serif;padding:40px">Você não tem acesso ao Painel Pronto. Fale com um administrador.</body>'; return; }
-  const blob=new Blob([j[0].html],{type:'text/html'});
-  document.getElementById('painel').src=URL.createObjectURL(blob);
+  _lastUpd=j[0].atualizado_em;
+  if(_blobUrl) URL.revokeObjectURL(_blobUrl);
+  _blobUrl=URL.createObjectURL(new Blob([j[0].html],{type:'text/html'}));
+  document.getElementById('painel').src=_blobUrl;
+  const d=new Date(_lastUpd);
+  document.getElementById('lastupd').textContent='● atualizado '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+
+// Verifica a cada 60s se há versão mais nova (consulta leve: só a data) e recarrega.
+async function verificarAtualizacao(){
+  try{
+    const t=await tok();
+    const r=await fetch(SUPA_URL+'/rest/v1/painel_vendeai_cache?select=atualizado_em&escopo=eq.painel',{headers:H(t)});
+    const j=await r.json();
+    if(Array.isArray(j)&&j.length && j[0].atualizado_em!==_lastUpd){
+      const lu=document.getElementById('lastupd'); if(lu) lu.textContent='● atualizando...';
+      await carregarPainel();
+    }
+  }catch(e){/* silencioso */}
 }
 
 async function carregarPerfil(){
@@ -183,6 +202,7 @@ async function iniciar(){
   document.getElementById('app').classList.remove('hidden');
   await carregarPerfil();
   await carregarPainel();
+  if(!window._poll){ window._poll=setInterval(verificarAtualizacao, 60000); }
 }
 
 // ── Gestão de usuários ──────────────────────────────────────────────
