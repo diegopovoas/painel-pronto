@@ -296,7 +296,7 @@ function montarFiltros(opc){
        <div class="ms-panel">
          <input class="ms-search" placeholder="Buscar...">
          <div class="ms-actions"><button type="button" class="ms-all">Marcar todos</button><button type="button" class="ms-none">Limpar</button></div>
-         <div class="ms-list">${vals.map(v=>`<div class="ms-opt" data-val="${esc(v)}"><span class="chk"><i data-lucide="check"></i></span><span class="txt">${v}</span></div>`).join('')}</div>
+         <div class="ms-list">${vals.map(v=>`<div class="ms-opt" data-val="${esc(v)}"><span class="chk"><i data-lucide="check"></i></span><span class="txt">${esc(dp(key,v))}</span></div>`).join('')}</div>
        </div>`);
     const btn=div.querySelector('.ms-btn'), panel=div.querySelector('.ms-panel'),
           busca=div.querySelector('.ms-search'), lbl=div.querySelector('.lbl'), cnt=div.querySelector('.cnt'),
@@ -311,7 +311,7 @@ function montarFiltros(opc){
     function atualizar(){
       const sel=[...div.querySelectorAll('.ms-opt.sel')].map(x=>x.dataset.val);
       selections[key]=new Set(sel);
-      if(sel.length){cnt.hidden=false;cnt.textContent=sel.length;lbl.textContent=sel.length===1?sel[0]:sel.length+' selecionados';btn.classList.add('tem');}
+      if(sel.length){cnt.hidden=false;cnt.textContent=sel.length;lbl.textContent=sel.length===1?dp(key,sel[0]):sel.length+' selecionados';btn.classList.add('tem');}
       else{cnt.hidden=true;lbl.textContent='Todos';btn.classList.remove('tem');}
       carregarDados();
     }
@@ -339,6 +339,36 @@ function limparFiltros(){
 const C={blue:'#3D7BFF',navy:'#2C4366',blueLt:'#7FA8FF',navyD:'#1A2B40',muted:'#9AA6BA',ok:'#3FB950',warn:'#D29922',red:'#CF190F'};
 const PAL=[C.blue,C.navy,C.blueLt,C.navyD,C.muted,'#22304A','#5D8BFF'];
 const PAGO=['LIQUIDATED_TO_CUSTOMER'],PEND=['PENDED_AI_HANDLE','PENDED_BANK','PENDED_DOCS','PENDED'],PERDA=['REJECTED','CANCELED'];
+
+// De-para: nomes amigáveis para os códigos internos do sistema (tela só exibe; filtros usam o código original)
+const DEPARA={
+  status:{WAITING_RISK_ANALYSIS:'Aguardando Análise',LIQUIDATED_TO_CUSTOMER:'Pago ao Cliente',FORMALIZATION_REQUESTED:'Formalização',
+    PROCESSING:'Em Processamento',REJECTED:'Reprovado',PENDED_AI_HANDLE:'Pendente IA',CANCELED:'Cancelado',
+    PENDED_DOCS:'Pendente Documentos',PENDED_BANK:'Pendente Banco',PENDED:'Pendente Geral'},
+  produto:{clt:'CLT',micro_credito_vdi:'Crédito Pessoal',fgts:'FGTS','(sem produto)':'Sem produto',
+    carro_assinatura:'Financiamento de veículos',renda_extra:'Crédito Pessoal'},
+  motivo:{nao_autorizado:'Cliente não autorizou venda',rejeitado:'Rejeitado',rejected:'Rejeitado',canceled:'Cancelada'},
+  fase:{_cross_sell:'Oferta Adicional',send_authorization:'Solicitação de Autorização',teimosinha:'Teimosinha',
+    coleta_dados:'Coleta de Dados',simulation:'Simulação',oferta:'Oferta',negotiator:'Negociação',
+    leilao_landing:'Leilão',proposal_sent:'Proposta Enviada',proposal_signed:'Proposta Assinada',digitador:'Digitação',
+    pos_venda:'Pós-Venda',vendedor:'Vendas',get_cpf:'Coleta de CPF',get_sim_data:'Dados para Simulação',
+    simulation_rejected:'Simulação Rejeitada',pended_bank_resubmit:'Reenvio ao Banco',first_message:'Primeiro Contato',
+    b_vendedor:'Atendimento Comercial',get_loan_purpose:'Finalidade do Crédito',_restart_command:'Reinício do Fluxo',
+    option:'Seleção de Opção','(sem fase)':'Sem fase'},
+  tag:{clt:'CLT',nao_autorizado:'Cliente não autorizou',rejeitado:'Banco não aprovou',micro_credito_vdi:'Ofertando crédito pessoal',
+    ofertado:'Pré venda',dados_simulacao_coletados:'Em simulação',simulado:'Simulado',fgts:'FGTS',
+    ticket_alto:'Valor acima do esperado',digitado:'Operação digitada',carro_assinatura:'Ofertando veículos',
+    pendenciamento:'Pendente',pago:'Operação paga',humano:'Atendimento humanizado',instabilidade:'Problema sistema banco',
+    rejeitado_com_possibilidade_de_oferta:'Ofertando outro produto',renda_extra:'Renda Extra',
+    '24hrs_expirado_atuar':'Ultrapassou 24 horas',aguardando_dados_bancarios:'Aguardando dados bancários',
+    'aguardando_digitação':'Aguardando digitação',aguardando_doc:'Aguardando documento',
+    aguardando_formalizacao:'Aguardando formalização',aguardando_pagamento:'Aguardando pagamento',
+    baixa_renda:'Crédito pessoal baixa renda',cancelado:'Cancelado',cliente_contata_banco:'Cliente contactando banco',
+    consignado_publico:'Consignado público',credito_cartao:'Cartão de crédito',crefaz_energia:'CREFAZ',
+    disparo:'Em disparo',factas_naolocalizados:'Não localizando proposta',nao_optante:'Cliente não optante',
+    problema:'Pendente',seguro_saude:'Ofertando seguro saúde',sem_margem:'Cliente não possui margem'}
+};
+function dp(tipo,val){ return (DEPARA[tipo]&&DEPARA[tipo][val]) || val; }
 let charts={};
 function mk(id,cfg){const light=document.documentElement.getAttribute('data-theme')==='light';
   const tc={text:light?'#5D6880':'#9AA6BA',grid:light?'rgba(16,24,42,.08)':'rgba(255,255,255,.06)'};
@@ -357,10 +387,10 @@ function renderPainel(){
     <div class="kpi red"><div class="v">${k.perdas.toLocaleString('pt-BR')}</div><div class="l">Perdidos</div></div>
     <div class="kpi"><div class="v">${k.taxa}%</div><div class="l">Conversão proposta→paga</div></div>`;
   mk('ch_funil',{type:'bar',data:{labels:['Leads','Simulou/Ofertou','Proposta','Pagas'],datasets:[{data:d.funil,backgroundColor:[C.blue,C.blueLt,C.warn,C.ok]}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
-  mk('ch_fase',{type:'bar',data:{labels:d.por_fase.map(x=>x[0]),datasets:[{data:d.por_fase.map(x=>x[1]),backgroundColor:C.blue}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
-  mk('ch_status',{type:'bar',data:{labels:d.por_status.map(x=>x[0]),datasets:[{data:d.por_status.map(x=>x[1]),backgroundColor:d.por_status.map(x=>PAGO.includes(x[0])?C.ok:PEND.includes(x[0])?C.warn:PERDA.includes(x[0])?C.red:C.blue)}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
-  mk('ch_perda',{type:'doughnut',data:{labels:d.motivos.map(x=>x[0]),datasets:[{data:d.motivos.map(x=>x[1]),backgroundColor:[C.red,'#E5564D','#9A1009',C.navy,C.muted,C.blue,C.navyD,C.blueLt]}]},options:{plugins:{legend:{position:'right'}},scales:{x:{display:false},y:{display:false}}}});
-  mk('ch_prod',{type:'doughnut',data:{labels:d.por_produto.map(x=>x[0]),datasets:[{data:d.por_produto.map(x=>x[1]),backgroundColor:PAL}]},options:{plugins:{legend:{position:'right'}},scales:{x:{display:false},y:{display:false}}}});
+  mk('ch_fase',{type:'bar',data:{labels:d.por_fase.map(x=>dp('fase',x[0])),datasets:[{data:d.por_fase.map(x=>x[1]),backgroundColor:C.blue}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
+  mk('ch_status',{type:'bar',data:{labels:d.por_status.map(x=>dp('status',x[0])),datasets:[{data:d.por_status.map(x=>x[1]),backgroundColor:d.por_status.map(x=>PAGO.includes(x[0])?C.ok:PEND.includes(x[0])?C.warn:PERDA.includes(x[0])?C.red:C.blue)}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
+  mk('ch_perda',{type:'doughnut',data:{labels:d.motivos.map(x=>dp('motivo',x[0])),datasets:[{data:d.motivos.map(x=>x[1]),backgroundColor:[C.red,'#E5564D','#9A1009',C.navy,C.muted,C.blue,C.navyD,C.blueLt]}]},options:{plugins:{legend:{position:'right'}},scales:{x:{display:false},y:{display:false}}}});
+  mk('ch_prod',{type:'doughnut',data:{labels:d.por_produto.map(x=>dp('produto',x[0])),datasets:[{data:d.por_produto.map(x=>x[1]),backgroundColor:PAL}]},options:{plugins:{legend:{position:'right'}},scales:{x:{display:false},y:{display:false}}}});
   mk('ch_banco',{type:'bar',data:{labels:d.por_banco.map(x=>x[0]),datasets:[{data:d.por_banco.map(x=>x[1]),backgroundColor:C.navy}]},options:{plugins:{legend:{display:false}}}});
   mk('ch_camp',{type:'bar',data:{labels:d.por_campanha.map(x=>x[0]),datasets:[{data:d.por_campanha.map(x=>x[1]),backgroundColor:C.blueLt}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
   mk('ch_time',{type:'line',data:{labels:d.timeline.map(x=>x[0]),datasets:[{label:'Leads',data:d.timeline.map(x=>x[1]),borderColor:C.blue,backgroundColor:'rgba(61,123,255,.15)',fill:true,tension:.3,pointRadius:1}]},options:{plugins:{legend:{display:false}}}});
@@ -377,7 +407,7 @@ function renderPainel(){
     <div class="kpi warn"><div class="v">${d.pendencias.length}</div><div class="l">Pendências (na lista)</div></div>
     <div class="kpi red"><div class="v">${d.pendencias.filter(r=>diasParado(r.updated_at)>=3).length}</div><div class="l">Parados há 3+ dias</div></div>
     <div class="kpi blue"><div class="v">${d.recentes.length.toLocaleString('pt-BR')}</div><div class="l">Atendimentos recentes</div></div>`;
-  document.querySelector('#tab_pend tbody').innerHTML=d.pendencias.map(r=>`<tr><td class="cliente-nome">${r.cliente}</td><td>${r.cpf}</td><td>${r.product}</td><td>${r.bank||'-'}</td><td><span class="pill pend">${r.status}</span></td><td>${r.stage}</td><td>${r.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</td><td class="${agc(diasParado(r.updated_at))}">${diasParado(r.updated_at)} dia(s)</td></tr>`).join('')||'<tr><td colspan="8" class="muted">Sem pendências. 🎉</td></tr>';
+  document.querySelector('#tab_pend tbody').innerHTML=d.pendencias.map(r=>`<tr><td class="cliente-nome">${r.cliente}</td><td>${r.cpf}</td><td>${dp('produto',r.product)}</td><td>${r.bank||'-'}</td><td><span class="pill pend">${dp('status',r.status)}</span></td><td>${dp('fase',r.stage)}</td><td>${r.tags.map(t=>`<span class="tag">${dp('tag',t)}</span>`).join('')}</td><td class="${agc(diasParado(r.updated_at))}">${diasParado(r.updated_at)} dia(s)</td></tr>`).join('')||'<tr><td colspan="8" class="muted">Sem pendências. 🎉</td></tr>';
   renderRecentes();
   if(window.lucide)lucide.createIcons();
 }
@@ -388,7 +418,7 @@ function renderRecentes(){
     if(b&&!((r.cliente||'').toLowerCase().includes(b)||(r.cpf||'').includes(b)))return false;return true;});
   const cls=r=>PAGO.includes(r.status)?'pago':PEND.includes(r.status)?'pend':PERDA.includes(r.status)?'perda':'neutro';
   document.getElementById('ope_count').textContent=R.length.toLocaleString('pt-BR');
-  document.querySelector('#tab_all tbody').innerHTML=R.map(r=>`<tr><td class="cliente-nome">${r.cliente}</td><td>${r.cpf}</td><td>${r.product}</td><td>${r.stage}</td><td>${r.status?`<span class="pill ${cls(r)}">${r.status}</span>`:'-'}</td><td>${r.bank||'-'}</td><td>${r.liquid_value?brl(r.liquid_value):'-'}</td><td>${r.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</td><td>${dataBR(r.updated_at)}</td></tr>`).join('');
+  document.querySelector('#tab_all tbody').innerHTML=R.map(r=>`<tr><td class="cliente-nome">${r.cliente}</td><td>${r.cpf}</td><td>${dp('produto',r.product)}</td><td>${dp('fase',r.stage)}</td><td>${r.status?`<span class="pill ${cls(r)}">${dp('status',r.status)}</span>`:'-'}</td><td>${r.bank||'-'}</td><td>${r.liquid_value?brl(r.liquid_value):'-'}</td><td>${r.tags.map(t=>`<span class="tag">${dp('tag',t)}</span>`).join('')}</td><td>${dataBR(r.updated_at)}</td></tr>`).join('');
 }
 function setView(v){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.v===v));document.getElementById('view-ger').classList.toggle('hidden',v!=='ger');document.getElementById('view-ope').classList.toggle('hidden',v!=='ope');}
 
