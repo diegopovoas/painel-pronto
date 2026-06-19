@@ -78,11 +78,27 @@ tbody tr:hover{background:var(--glass)}
 .fbar label{display:block;font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.25rem}
 .fbar select{width:100%;background:var(--elev);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:.5rem .55rem;font-size:.8rem}
 .ms{position:relative}.ms.aberto{z-index:300}
-.ms-btn{width:100%;text-align:left;background:var(--elev);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:.5rem .55rem;font-size:.8rem;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:.3rem}
-.ms-btn:hover{border-color:var(--navy2)}.ms-btn .cnt{background:var(--blue);color:#fff;border-radius:20px;font-size:.62rem;padding:1px 7px;font-weight:700}
-.ms-panel{position:absolute;z-index:300;top:calc(100% + 4px);left:0;right:0;max-height:240px;overflow:auto;background:var(--elev);border:1px solid var(--border);border-radius:10px;padding:.3rem;box-shadow:var(--shadow);display:none}
-.ms-panel.open{display:block}.ms-opt{display:flex;align-items:center;gap:.45rem;padding:.35rem .45rem;border-radius:6px;cursor:pointer;font-size:.78rem}
-.ms-opt:hover{background:var(--glass)}.ms-opt input{accent-color:var(--blue)}
+.ms-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:.4rem;background:var(--elev);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:.55rem .7rem;font-size:.82rem;cursor:pointer;transition:all .15s}
+.ms-btn:hover{border-color:var(--navy2);background:var(--glass)}
+.ms-btn.tem{border-color:rgba(61,123,255,.55);background:rgba(61,123,255,.08)}
+.ms-btn .lbl{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ms-btn .rt{display:flex;align-items:center;gap:.35rem;flex-shrink:0}
+.ms-btn .cnt{background:var(--blue);color:#fff;border-radius:20px;font-size:.62rem;padding:1px 7px;font-weight:700}
+.ms-btn .chev{width:15px;height:15px;color:var(--muted);transition:transform .15s}
+.ms.aberto .ms-btn .chev{transform:rotate(180deg)}
+.ms-panel{position:absolute;z-index:300;top:calc(100% + 6px);left:0;right:0;min-width:210px;background:var(--elev);border:1px solid var(--border);border-radius:12px;padding:.4rem;box-shadow:0 14px 36px rgba(0,0,0,.45);display:none}
+.ms-panel.open{display:block;animation:msin .13s ease}
+@keyframes msin{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+.ms-search{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:.45rem .6rem;font-size:.78rem;color:var(--text);margin-bottom:.35rem}
+.ms-search:focus{outline:none;border-color:var(--blue)}
+.ms-list{max-height:230px;overflow:auto}
+.ms-opt{display:flex;align-items:center;gap:.55rem;padding:.45rem .5rem;border-radius:8px;cursor:pointer;font-size:.8rem;user-select:none}
+.ms-opt:hover{background:var(--glass)}
+.ms-opt .chk{width:17px;height:17px;border:1.6px solid var(--border);border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .12s}
+.ms-opt .chk i{width:12px;height:12px;color:#fff;opacity:0;transition:opacity .12s}
+.ms-opt.sel{background:rgba(61,123,255,.1)}
+.ms-opt.sel .chk{background:var(--blue);border-color:var(--blue)}
+.ms-opt.sel .chk i{opacity:1}
 .fclear{background:rgba(207,25,15,.1);border:1px solid rgba(207,25,15,.35);color:#ff8a82;border-radius:8px;padding:.5rem;font-size:.78rem;font-weight:600;cursor:pointer}
 .loading{position:fixed;top:60px;right:18px;background:var(--navy2);color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;z-index:550;display:none}
 
@@ -268,32 +284,44 @@ async function verificar(){ await carregarDados(); }
 
 // Filtros multi-seleção (dispara recarga da API)
 function montarFiltros(opc){
+  const esc=s=>(''+s).replace(/"/g,'&quot;');
   document.querySelectorAll('.fbar .ms').forEach(div=>{
     const key=div.dataset.key, vals=opc[key]||[];
     div.insertAdjacentHTML('beforeend',
-      `<button class="ms-btn" type="button"><span class="lbl">Todos</span><span class="cnt" style="display:none">0</span></button>
-       <div class="ms-panel">${vals.map(v=>`<label class="ms-opt"><input type="checkbox" value="${(''+v).replace(/"/g,'&quot;')}"><span>${v}</span></label>`).join('')}</div>`);
-    const btn=div.querySelector('.ms-btn'),panel=div.querySelector('.ms-panel');
+      `<button class="ms-btn" type="button"><span class="lbl">Todos</span>
+         <span class="rt"><span class="cnt" hidden>0</span><i data-lucide="chevron-down" class="chev"></i></span></button>
+       <div class="ms-panel">
+         <input class="ms-search" placeholder="Buscar...">
+         <div class="ms-list">${vals.map(v=>`<div class="ms-opt" data-val="${esc(v)}"><span class="chk"><i data-lucide="check"></i></span><span class="txt">${v}</span></div>`).join('')}</div>
+       </div>`);
+    const btn=div.querySelector('.ms-btn'), panel=div.querySelector('.ms-panel'),
+          busca=div.querySelector('.ms-search'), lbl=div.querySelector('.lbl'), cnt=div.querySelector('.cnt');
     btn.addEventListener('click',e=>{e.stopPropagation();
       document.querySelectorAll('.ms-panel.open').forEach(p=>{if(p!==panel){p.classList.remove('open');p.closest('.ms').classList.remove('aberto');}});
-      const a=!panel.classList.contains('open');panel.classList.toggle('open',a);div.classList.toggle('aberto',a);});
-    panel.addEventListener('change',()=>{
-      const sel=[...panel.querySelectorAll('input:checked')].map(i=>i.value);
+      const a=!panel.classList.contains('open'); panel.classList.toggle('open',a); div.classList.toggle('aberto',a);
+      if(a){busca.value='';div.querySelectorAll('.ms-opt').forEach(o=>o.style.display='');busca.focus();}});
+    panel.addEventListener('click',e=>e.stopPropagation());
+    busca.addEventListener('input',()=>{const t=busca.value.toLowerCase();
+      div.querySelectorAll('.ms-opt').forEach(o=>o.style.display=o.dataset.val.toLowerCase().includes(t)?'':'none');});
+    div.querySelectorAll('.ms-opt').forEach(o=>o.addEventListener('click',()=>{
+      o.classList.toggle('sel');
+      const sel=[...div.querySelectorAll('.ms-opt.sel')].map(x=>x.dataset.val);
       selections[key]=new Set(sel);
-      const cnt=div.querySelector('.cnt'),lbl=div.querySelector('.lbl');
-      if(sel.length){cnt.style.display='';cnt.textContent=sel.length;lbl.textContent=sel.length===1?sel[0]:sel.length+' selec.';}
-      else{cnt.style.display='none';lbl.textContent='Todos';}
+      if(sel.length){cnt.hidden=false;cnt.textContent=sel.length;lbl.textContent=sel.length===1?sel[0]:sel.length+' selecionados';btn.classList.add('tem');}
+      else{cnt.hidden=true;lbl.textContent='Todos';btn.classList.remove('tem');}
       carregarDados();
-    });
+    }));
   });
   document.addEventListener('click',()=>document.querySelectorAll('.ms-panel.open').forEach(p=>{p.classList.remove('open');p.closest('.ms').classList.remove('aberto');}));
   document.getElementById('f_periodo').addEventListener('change',carregarDados);
+  if(window.lucide) lucide.createIcons();
 }
 function limparFiltros(){
   for(const k in selections) selections[k]=new Set();
-  document.querySelectorAll('.fbar input:checked').forEach(i=>i.checked=false);
-  document.querySelectorAll('.fbar .cnt').forEach(c=>c.style.display='none');
+  document.querySelectorAll('.fbar .ms-opt.sel').forEach(o=>o.classList.remove('sel'));
+  document.querySelectorAll('.fbar .cnt').forEach(c=>c.hidden=true);
   document.querySelectorAll('.fbar .lbl').forEach(l=>l.textContent='Todos');
+  document.querySelectorAll('.fbar .ms-btn').forEach(b=>b.classList.remove('tem'));
   document.getElementById('f_periodo').value='0';
   carregarDados();
 }
