@@ -95,10 +95,13 @@ tbody tr:hover{background:var(--glass)}
 .ms-opt{display:flex;align-items:center;gap:.55rem;padding:.45rem .5rem;border-radius:8px;cursor:pointer;font-size:.8rem;user-select:none}
 .ms-opt:hover{background:var(--glass)}
 .ms-opt .chk{width:17px;height:17px;border:1.6px solid var(--border);border-radius:5px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .12s}
-.ms-opt .chk i{width:12px;height:12px;color:#fff;opacity:0;transition:opacity .12s}
+.ms-opt .chk svg{width:12px;height:12px;color:#fff;opacity:0;transition:opacity .12s}
 .ms-opt.sel{background:rgba(61,123,255,.1)}
 .ms-opt.sel .chk{background:var(--blue);border-color:var(--blue)}
-.ms-opt.sel .chk i{opacity:1}
+.ms-opt.sel .chk svg{opacity:1}
+.ms-actions{display:flex;gap:.5rem;padding:.1rem .3rem .4rem}
+.ms-actions button{flex:1;background:none;border:none;color:var(--blue);font-size:.74rem;font-weight:600;cursor:pointer;padding:.2rem 0}
+.ms-actions button:hover{text-decoration:underline}
 .fclear{background:rgba(207,25,15,.1);border:1px solid rgba(207,25,15,.35);color:#ff8a82;border-radius:8px;padding:.5rem;font-size:.78rem;font-weight:600;cursor:pointer}
 .loading{position:fixed;top:60px;right:18px;background:var(--navy2);color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;z-index:550;display:none}
 
@@ -292,10 +295,12 @@ function montarFiltros(opc){
          <span class="rt"><span class="cnt" hidden>0</span><i data-lucide="chevron-down" class="chev"></i></span></button>
        <div class="ms-panel">
          <input class="ms-search" placeholder="Buscar...">
+         <div class="ms-actions"><button type="button" class="ms-all">Marcar todos</button><button type="button" class="ms-none">Limpar</button></div>
          <div class="ms-list">${vals.map(v=>`<div class="ms-opt" data-val="${esc(v)}"><span class="chk"><i data-lucide="check"></i></span><span class="txt">${v}</span></div>`).join('')}</div>
        </div>`);
     const btn=div.querySelector('.ms-btn'), panel=div.querySelector('.ms-panel'),
-          busca=div.querySelector('.ms-search'), lbl=div.querySelector('.lbl'), cnt=div.querySelector('.cnt');
+          busca=div.querySelector('.ms-search'), lbl=div.querySelector('.lbl'), cnt=div.querySelector('.cnt'),
+          mAll=div.querySelector('.ms-all'), mNone=div.querySelector('.ms-none');
     btn.addEventListener('click',e=>{e.stopPropagation();
       document.querySelectorAll('.ms-panel.open').forEach(p=>{if(p!==panel){p.classList.remove('open');p.closest('.ms').classList.remove('aberto');}});
       const a=!panel.classList.contains('open'); panel.classList.toggle('open',a); div.classList.toggle('aberto',a);
@@ -303,14 +308,18 @@ function montarFiltros(opc){
     panel.addEventListener('click',e=>e.stopPropagation());
     busca.addEventListener('input',()=>{const t=busca.value.toLowerCase();
       div.querySelectorAll('.ms-opt').forEach(o=>o.style.display=o.dataset.val.toLowerCase().includes(t)?'':'none');});
-    div.querySelectorAll('.ms-opt').forEach(o=>o.addEventListener('click',()=>{
-      o.classList.toggle('sel');
+    function atualizar(){
       const sel=[...div.querySelectorAll('.ms-opt.sel')].map(x=>x.dataset.val);
       selections[key]=new Set(sel);
       if(sel.length){cnt.hidden=false;cnt.textContent=sel.length;lbl.textContent=sel.length===1?sel[0]:sel.length+' selecionados';btn.classList.add('tem');}
       else{cnt.hidden=true;lbl.textContent='Todos';btn.classList.remove('tem');}
       carregarDados();
-    }));
+    }
+    div.querySelectorAll('.ms-opt').forEach(o=>o.addEventListener('click',()=>{o.classList.toggle('sel');atualizar();}));
+    mAll.addEventListener('click',e=>{e.stopPropagation();
+      div.querySelectorAll('.ms-opt').forEach(o=>{if(o.style.display!=='none')o.classList.add('sel');});atualizar();});
+    mNone.addEventListener('click',e=>{e.stopPropagation();
+      div.querySelectorAll('.ms-opt.sel').forEach(o=>o.classList.remove('sel'));atualizar();});
   });
   document.addEventListener('click',()=>document.querySelectorAll('.ms-panel.open').forEach(p=>{p.classList.remove('open');p.closest('.ms').classList.remove('aberto');}));
   document.getElementById('f_periodo').addEventListener('change',carregarDados);
