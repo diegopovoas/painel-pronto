@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Painel Pronto — Nova Promotora</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231A2B40'/%3E%3Ctext x='50' y='69' font-size='54' text-anchor='middle' fill='%233D7BFF' font-family='Arial' font-weight='bold'%3EN%3C/text%3E%3C/svg%3E">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#080B12;--elev:#0E1421;--navy:#1A2B40;--navy2:#2C4366;--border:#22304A;
+  --red:#CF190F;--blue:#3D7BFF;--text:#EEF2F8;--muted:#9AA6BA;--dim:#5D6880;
+  --glass:rgba(255,255,255,.05);--glassb:rgba(255,255,255,.10);--ok:#3FB950;--warn:#D29922}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Sora',system-ui,sans-serif;font-size:15px}
+.hidden{display:none!important}
+button{font-family:inherit;cursor:pointer}
+input,select{font-family:inherit}
+
+/* Login */
+#login{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;padding:20px;background:radial-gradient(1200px 600px at 50% -10%,#13243f,#080B12)}
+.loginbox{width:360px;max-width:100%;background:var(--glass);border:1px solid var(--glassb);border-radius:20px;
+  padding:34px 30px;backdrop-filter:blur(18px) saturate(120%);box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.llogo{display:flex;align-items:center;gap:11px;margin-bottom:24px}
+.llogo .mk{width:44px;height:44px;border-radius:13px;background:var(--navy);display:flex;align-items:center;justify-content:center;color:var(--blue);font-weight:800;font-size:22px}
+.llogo h2{font-size:18px;font-weight:700}.llogo p{font-size:11px;color:var(--muted);margin-top:2px}
+#login label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 5px}
+#login input{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:12px 13px;font-size:14px}
+#login input:focus{outline:2px solid var(--blue);border-color:var(--blue)}
+.btn-primary{width:100%;margin-top:20px;background:var(--blue);color:#fff;border:0;border-radius:10px;padding:12px;font-size:15px;font-weight:700;transition:.15s}
+.btn-primary:hover{filter:brightness(1.08)}.btn-primary:active{transform:translateY(1px)}
+.err{display:none;background:rgba(207,25,15,.13);border:1px solid rgba(207,25,15,.4);color:#ff8a82;border-radius:9px;padding:9px 12px;font-size:12.5px;margin-top:14px;text-align:center}
+
+/* App */
+#app{display:flex;flex-direction:column;height:100vh}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;background:var(--navy);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.topbar .brand{display:flex;align-items:center;gap:10px;font-weight:700}
+.topbar .mk{width:32px;height:32px;border-radius:10px;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--blue);font-weight:800}
+.topbar .brand span{color:var(--blue)}
+.topbar .right{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);flex-wrap:wrap}
+.tbtn{background:var(--glass);border:1px solid var(--glassb);color:var(--text);border-radius:9px;padding:7px 12px;font-size:13px;font-weight:600;transition:.15s}
+.tbtn:hover{background:rgba(255,255,255,.09)}
+.tbtn.red{background:rgba(207,25,15,.13);border-color:rgba(207,25,15,.4);color:#ff8a82}
+iframe{flex:1;width:100%;border:0;background:var(--bg)}
+
+/* Usuários */
+#usuarios{position:fixed;inset:0;background:var(--bg);z-index:50;overflow:auto;padding:24px}
+.umax{max-width:1000px;margin:0 auto}
+#usuarios h2{font-size:20px;margin-bottom:4px}#usuarios .sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+.card{background:var(--glass);border:1px solid var(--glassb);border-radius:16px;padding:18px;margin-bottom:18px;backdrop-filter:blur(18px)}
+.card h3{font-size:15px;margin-bottom:14px}
+.formgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:end}
+.formgrid label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:4px}
+.formgrid input,.formgrid select{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:9px;padding:10px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{text-align:left;padding:9px 10px;border-bottom:1px solid var(--border)}
+th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+.badge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:11px;font-weight:600}
+.badge.admin{background:rgba(61,123,255,.16);color:var(--blue)}
+.badge.backoffice{background:rgba(63,185,80,.16);color:var(--ok)}
+.badge.socio{background:rgba(210,153,34,.16);color:var(--warn)}
+.badge.block{background:rgba(207,25,15,.16);color:#ff8a82}
+.act{background:var(--glass);border:1px solid var(--glassb);color:var(--text);border-radius:7px;padding:4px 9px;font-size:12px;margin:1px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy2);border:1px solid var(--border);
+  color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;z-index:100;box-shadow:0 10px 30px rgba(0,0,0,.4);display:none}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login">
+  <form class="loginbox" onsubmit="entrar(event)">
+    <div class="llogo"><div class="mk">N</div><div><h2>Painel <span style="color:var(--blue)">Pronto</span></h2><p>Nova Promotora · acesso restrito</p></div></div>
+    <label for="email">E-mail</label>
+    <input id="email" type="email" autocomplete="username" required>
+    <label for="senha">Senha</label>
+    <input id="senha" type="password" autocomplete="current-password" required>
+    <button class="btn-primary" type="submit" id="btnentrar">Entrar</button>
+    <div class="err" id="loginerr"></div>
+  </form>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+  <div class="topbar">
+    <div class="brand"><div class="mk">N</div>Painel <span>Pronto</span></div>
+    <div class="right">
+      <span id="whoami"></span>
+      <button class="tbtn" id="btnusers" onclick="abrirUsuarios()" style="display:none">Usuários</button>
+      <button class="tbtn red" onclick="sair()">Sair</button>
+    </div>
+  </div>
+  <iframe id="painel" title="Painel Pronto"></iframe>
+</div>
+
+<!-- USUÁRIOS -->
+<div id="usuarios" class="hidden">
+  <div class="umax">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div><h2>Gestão de usuários — Pronto</h2><div class="sub">Crie, dê papéis, bloqueie ou redefina senha.</div></div>
+      <button class="tbtn" onclick="fecharUsuarios()">← Voltar ao painel</button>
+    </div>
+    <div class="card">
+      <h3>Criar novo usuário</h3>
+      <form class="formgrid" onsubmit="criarUsuario(event)">
+        <div><label>Nome</label><input id="n_nome" required></div>
+        <div><label>E-mail</label><input id="n_email" type="email" required></div>
+        <div><label>Senha</label><input id="n_senha" type="text" placeholder="mín. 6" required></div>
+        <div><label>Papel</label><select id="n_papel"><option value="backoffice">Backoffice</option><option value="socio">Sócio</option><option value="admin">Admin Pronto</option></select></div>
+        <div><button class="btn-primary" style="margin:0" type="submit">Criar</button></div>
+      </form>
+    </div>
+    <div class="card">
+      <h3>Usuários com acesso à Pronto</h3>
+      <table><thead><tr><th>Nome</th><th>E-mail</th><th>Papel</th><th>Status</th><th>Ações</th></tr></thead>
+        <tbody id="users_tbody"><tr><td colspan="5" style="color:var(--muted)">Carregando...</td></tr></tbody></table>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPA_URL='https://drokcguxofvmdrnmedrx.supabase.co';
+const ANON='sb_publishable_AhOot6J1thyzjMKzuMqUvw_JfbbNf6m';
+const SESS_KEY='pronto_sess';
+let sess=null, perfil=null;
+
+function H(token){return {apikey:ANON,'Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{})};}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2600);}
+
+// ── Login ───────────────────────────────────────────────────────────
+async function entrar(e){
+  e.preventDefault();
+  const email=document.getElementById('email').value.trim().toLowerCase();
+  const senha=document.getElementById('senha').value;
+  const err=document.getElementById('loginerr'); err.style.display='none';
+  const btn=document.getElementById('btnentrar'); btn.disabled=true; btn.textContent='Entrando...';
+  try{
+    const r=await fetch(SUPA_URL+'/auth/v1/token?grant_type=password',{method:'POST',headers:H(),body:JSON.stringify({email,password:senha})});
+    const j=await r.json();
+    if(!r.ok) throw new Error(j.error_description||j.msg||'E-mail ou senha inválidos');
+    sess={t:j.access_token,rt:j.refresh_token,email,exp:Date.now()+(j.expires_in||3600)*1000};
+    localStorage.setItem(SESS_KEY,JSON.stringify(sess));
+    await iniciar();
+  }catch(ex){ err.textContent=ex.message; err.style.display='block'; }
+  finally{ btn.disabled=false; btn.textContent='Entrar'; }
+}
+
+async function refresh(){
+  if(!sess?.rt) return false;
+  const r=await fetch(SUPA_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',headers:H(),body:JSON.stringify({refresh_token:sess.rt})});
+  if(!r.ok) return false;
+  const j=await r.json();
+  sess={t:j.access_token,rt:j.refresh_token||sess.rt,email:sess.email,exp:Date.now()+(j.expires_in||3600)*1000};
+  localStorage.setItem(SESS_KEY,JSON.stringify(sess));
+  return true;
+}
+async function tok(){ if(sess && Date.now()>sess.exp-60000){ await refresh(); } return sess?.t; }
+
+function sair(){ localStorage.removeItem(SESS_KEY); sess=null; location.reload(); }
+
+// ── Carregar painel ─────────────────────────────────────────────────
+async function carregarPainel(){
+  const t=await tok();
+  const r=await fetch(SUPA_URL+'/rest/v1/painel_vendeai_cache?select=html&escopo=eq.painel',{headers:H(t)});
+  const j=await r.json();
+  if(!Array.isArray(j)||!j.length){ document.getElementById('painel').srcdoc='<body style="background:#080B12;color:#9AA6BA;font-family:sans-serif;padding:40px">Você não tem acesso ao Painel Pronto. Fale com um administrador.</body>'; return; }
+  const blob=new Blob([j[0].html],{type:'text/html'});
+  document.getElementById('painel').src=URL.createObjectURL(blob);
+}
+
+async function carregarPerfil(){
+  const t=await tok();
+  // is_pronto_admin determina se mostra a gestão de usuários
+  const r=await fetch(SUPA_URL+'/rest/v1/rpc/is_pronto_admin',{method:'POST',headers:H(t),body:'{}'});
+  const isAdmin = r.ok ? await r.json() : false;
+  document.getElementById('btnusers').style.display = isAdmin ? '' : 'none';
+  document.getElementById('whoami').textContent=sess.email;
+}
+
+async function iniciar(){
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  await carregarPerfil();
+  await carregarPainel();
+}
+
+// ── Gestão de usuários ──────────────────────────────────────────────
+async function rpc(fn,args){
+  const t=await tok();
+  const r=await fetch(SUPA_URL+'/rest/v1/rpc/'+fn,{method:'POST',headers:H(t),body:JSON.stringify(args||{})});
+  if(!r.ok){ const e=await r.json().catch(()=>({})); throw new Error(e.message||('Erro '+r.status)); }
+  const txt=await r.text(); return txt?JSON.parse(txt):null;
+}
+function abrirUsuarios(){ document.getElementById('usuarios').classList.remove('hidden'); listarUsuarios(); }
+function fecharUsuarios(){ document.getElementById('usuarios').classList.add('hidden'); }
+
+async function listarUsuarios(){
+  const tb=document.getElementById('users_tbody');
+  try{
+    const us=await rpc('pronto_listar_usuarios');
+    tb.innerHTML = us.map(u=>{
+      const papel = u.role==='admin' ? '<span class="badge admin">ADMIN (geral)</span>' :
+        (u.papel_pronto?`<span class="badge ${u.papel_pronto}">${u.papel_pronto}</span>`:'-');
+      const st = u.bloqueado?'<span class="badge block">bloqueado</span>':'<span style="color:var(--ok)">ativo</span>';
+      const adminGeral = u.role==='admin';
+      return `<tr><td>${u.nome||'-'}</td><td>${u.login}</td><td>${papel}</td><td>${st}</td><td>${adminGeral?'<span style="color:var(--dim);font-size:12px">gerido na Gestão</span>':`
+        <select class="act" onchange="setPapel('${u.login}',this.value)">
+          <option ${u.papel_pronto==='backoffice'?'selected':''} value="backoffice">Backoffice</option>
+          <option ${u.papel_pronto==='socio'?'selected':''} value="socio">Sócio</option>
+          <option ${u.papel_pronto==='admin'?'selected':''} value="admin">Admin Pronto</option>
+          <option value="__null">Remover acesso</option>
+        </select>
+        <button class="act" onclick="bloquear('${u.login}',${!u.bloqueado})">${u.bloqueado?'Desbloquear':'Bloquear'}</button>
+        <button class="act" onclick="resetSenha('${u.login}')">Resetar senha</button>`}</td></tr>`;
+    }).join('') || '<tr><td colspan="5" style="color:var(--muted)">Nenhum usuário ainda.</td></tr>';
+  }catch(ex){ tb.innerHTML=`<tr><td colspan="5" style="color:#ff8a82">${ex.message}</td></tr>`; }
+}
+async function criarUsuario(e){
+  e.preventDefault();
+  try{
+    await rpc('pronto_criar_usuario',{p_email:document.getElementById('n_email').value.trim().toLowerCase(),
+      p_senha:document.getElementById('n_senha').value, p_nome:document.getElementById('n_nome').value.trim(),
+      p_papel:document.getElementById('n_papel').value});
+    toast('Usuário criado!'); e.target.reset(); listarUsuarios();
+  }catch(ex){ toast(ex.message); }
+}
+async function setPapel(login,val){ try{ await rpc('pronto_set_papel',{alvo:login,p_papel:val==='__null'?null:val}); toast('Papel atualizado'); listarUsuarios(); }catch(ex){ toast(ex.message); } }
+async function bloquear(login,b){ try{ await rpc('pronto_bloquear',{alvo:login,bloquear:b}); toast(b?'Bloqueado':'Desbloqueado'); listarUsuarios(); }catch(ex){ toast(ex.message); } }
+async function resetSenha(login){ const nova=prompt('Nova senha para '+login+' (mín. 6):'); if(!nova)return; try{ await rpc('pronto_reset_senha',{alvo:login,nova}); toast('Senha redefinida'); }catch(ex){ toast(ex.message); } }
+
+// ── Boot ────────────────────────────────────────────────────────────
+(async()=>{
+  const saved=localStorage.getItem(SESS_KEY);
+  if(saved){ sess=JSON.parse(saved); if(await tok()){ try{ await iniciar(); }catch(e){ sair(); } } }
+})();
+</script>
+</body>
+</html>
