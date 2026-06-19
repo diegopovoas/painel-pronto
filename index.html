@@ -207,8 +207,16 @@ const SUPA_URL='https://drokcguxofvmdrnmedrx.supabase.co';
 const ANON='sb_publishable_AhOot6J1thyzjMKzuMqUvw_JfbbNf6m';
 const API_URL='https://24-144-112-34.sslip.io';
 const SESS_KEY='pronto_sess';
-let sess=null, DADOS=null, _lastUpd=null, _filtrosProntos=false;
+let sess=null, _filtrosProntos=false;
+window.SNAP=null;
+
+// Índices das colunas em SNAP.rows
+const R_PROD=0, R_STAGE=1, R_CAMP=2, R_TAGS=3, R_DATE=4, R_STATUS=5, R_BANK=6, R_VALUE=7;
+
+// Filtros 100% client-side
 const selections={produto:new Set(),banco:new Set(),campanha:new Set(),status:new Set(),fase:new Set(),tag:new Set()};
+let periodoVal='0';
+
 function H(t){return {apikey:ANON,'Content-Type':'application/json',...(t?{Authorization:'Bearer '+t}:{})};}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2600);}
 const brl=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -216,7 +224,7 @@ const dataBR=s=>s?s.slice(0,10).split('-').reverse().join('/'):'-';
 const diasParado=s=>s?Math.floor((Date.now()-new Date(s).getTime())/86400000):0;
 
 // Tema + acessibilidade
-function applyTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem('nova_theme',t);if(DADOS)renderPainel();}
+function applyTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem('nova_theme',t);if(window.SNAP)aplicarFiltros();}
 function toggleTheme(){applyTheme(document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark');}
 function setScale(p){document.documentElement.style.fontSize=(16*p/100)+'px';localStorage.setItem('nova_scale',p);['sc100','sc125','sc155'].forEach(i=>document.getElementById(i).classList.remove('on'));document.getElementById('sc'+p).classList.add('on');}
 applyTheme(localStorage.getItem('nova_theme')||'dark');
@@ -242,31 +250,23 @@ async function refresh(){if(!sess?.rt)return false;
 async function tok(){if(sess&&Date.now()>sess.exp-60000)await refresh();return sess?.t;}
 function sair(){localStorage.removeItem(SESS_KEY);sess=null;location.reload();}
 
-// Monta a query string a partir dos filtros selecionados
-function queryFiltros(){
-  const p=new URLSearchParams();
-  for(const k in selections){ if(selections[k].size) p.set(k,[...selections[k]].join(',')); }
-  const per=document.getElementById('f_periodo'); if(per&&per.value!=='0') p.set('periodo',per.value);
-  return p.toString();
-}
-// Carrega dados da API (filtrados ao vivo no banco)
-async function carregarDados(){
+// ===== Snapshot: UMA chamada à API, depois tudo é client-side =====
+async function carregarSnapshot(){
   const t=await tok();
   const ld=document.getElementById('loading'); ld.style.display='block';
   try{
-    const r=await fetch(API_URL+'/dados?'+queryFiltros(),{headers:{Authorization:'Bearer '+t}});
+    const r=await fetch(API_URL+'/snapshot',{headers:{Authorization:'Bearer '+t}});
     if(r.status===403){document.getElementById('kpis').innerHTML='<div class="muted">Você não tem acesso ao Painel Pronto. Fale com um administrador.</div>';return;}
     if(!r.ok) throw new Error('Erro '+r.status);
-    DADOS=await r.json(); _lastUpd=new Date().toISOString();
+    window.SNAP=await r.json();
     document.getElementById('lastupd').textContent='● atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    if(DADOS.opcoes && !_filtrosProntos){ montarFiltros(DADOS.opcoes); _filtrosProntos=true; }
-    renderPainel();
+    if(window.SNAP.opcoes && !_filtrosProntos){ montarFiltros(window.SNAP.opcoes); _filtrosProntos=true; }
+    aplicarFiltros();
   }catch(ex){ toast('Erro ao carregar: '+ex.message); }
   finally{ ld.style.display='none'; }
 }
-async function verificar(){ await carregarDados(); }
 
-// Filtros multi-seleção (dispara recarga da API)
+// ===== Filtros multi-seleção (montados uma vez a partir de SNAP.opcoes) =====
 function montarFiltros(opc){
   document.querySelectorAll('.fbar .ms').forEach(div=>{
     const key=div.dataset.key, vals=opc[key]||[];
@@ -283,19 +283,136 @@ function montarFiltros(opc){
       const cnt=div.querySelector('.cnt'),lbl=div.querySelector('.lbl');
       if(sel.length){cnt.style.display='';cnt.textContent=sel.length;lbl.textContent=sel.length===1?sel[0]:sel.length+' selec.';}
       else{cnt.style.display='none';lbl.textContent='Todos';}
-      carregarDados();
+      aplicarFiltros();
     });
   });
   document.addEventListener('click',()=>document.querySelectorAll('.ms-panel.open').forEach(p=>{p.classList.remove('open');p.closest('.ms').classList.remove('aberto');}));
-  document.getElementById('f_periodo').addEventListener('change',carregarDados);
+  document.getElementById('f_periodo').addEventListener('change',e=>{periodoVal=e.target.value;aplicarFiltros();});
 }
 function limparFiltros(){
   for(const k in selections) selections[k]=new Set();
   document.querySelectorAll('.fbar input:checked').forEach(i=>i.checked=false);
   document.querySelectorAll('.fbar .cnt').forEach(c=>c.style.display='none');
   document.querySelectorAll('.fbar .lbl').forEach(l=>l.textContent='Todos');
-  document.getElementById('f_periodo').value='0';
-  carregarDados();
+  document.getElementById('f_periodo').value='0';periodoVal='0';
+  aplicarFiltros();
+}
+
+// Data de corte do período (YYYY-MM-DD). null = tudo.
+function periodoCorte(){
+  if(!periodoVal||periodoVal==='0')return null;
+  const dias=parseInt(periodoVal);
+  const d=new Date();
+  if(dias===1){d.setHours(0,0,0,0);}
+  else{d.setDate(d.getDate()-dias);}
+  return d;
+}
+
+// Conjuntos auxiliares de etiquetas/fases que contam como "simulou/ofertou"
+const SIM_STAGES=new Set(['simulation','oferta','proposal_sent','proposal_signed']);
+const SIM_TAGS=new Set(['simulado','ofertado']);
+
+// ===== Aplica TODOS os filtros sobre SNAP.rows e recalcula o painel =====
+function aplicarFiltros(){
+  if(!window.SNAP)return;
+  const S=window.SNAP;
+  const fp=selections.produto, fb=selections.banco, fc=selections.campanha,
+        fs=selections.status, ffa=selections.fase, ft=selections.tag;
+  const corte=periodoCorte();
+  const corteStr=corte?corte.toISOString().slice(0,10):null;
+
+  function tagsHit(tags){ // tags array|null vs ft set
+    if(!ft.size)return true;
+    if(!Array.isArray(tags))return false;
+    return tags.some(t=>ft.has(t));
+  }
+
+  // 1. Filtra as rows
+  const rows=S.rows.filter(r=>{
+    if(fp.size && !fp.has(r[R_PROD]))return false;
+    if(fc.size && !fc.has(r[R_CAMP]))return false;
+    if(ffa.size && !ffa.has(r[R_STAGE]))return false;
+    if(fb.size && !fb.has(r[R_BANK]))return false;
+    if(fs.size && !fs.has(r[R_STATUS]))return false;
+    if(ft.size && !tagsHit(r[R_TAGS]))return false;
+    if(corteStr && (!r[R_DATE] || r[R_DATE] < corteStr))return false;
+    return true;
+  });
+
+  // 2. KPIs
+  const PAGO=['LIQUIDATED_TO_CUSTOMER'],PEND=['PENDED_AI_HANDLE','PENDED_BANK','PENDED_DOCS','PENDED'],PERDA=['REJECTED','CANCELED'];
+  const PAGOs=new Set(PAGO),PENDs=new Set(PEND),PERDAs=new Set(PERDA);
+  let leads=rows.length, propostas=0, pagas=0, valor=0, pend=0, perdas=0, comSim=0;
+  // distribuições
+  const dProd={},dFase={},dCamp={},dBanco={},dStatus={};
+  // motivos de perda (por status + tags de perda)
+  const motivos={};
+  const PERDA_TAGS=new Set(['nao_autorizado','rejeitado']);
+  // timeline por dia (48h)
+  const tl={};
+  const hoje=new Date(); const limite48=new Date(hoje.getTime()-48*3600000);
+  const limite48Str=limite48.toISOString().slice(0,10);
+
+  for(const r of rows){
+    const prod=r[R_PROD]||'(sem produto)', fase=r[R_STAGE]||'(sem fase)', camp=r[R_CAMP]||'(sem campanha)';
+    const st=r[R_STATUS], bank=r[R_BANK], val=r[R_VALUE], tags=r[R_TAGS];
+    dProd[prod]=(dProd[prod]||0)+1;
+    dFase[fase]=(dFase[fase]||0)+1;
+    dCamp[camp]=(dCamp[camp]||0)+1;
+    if(st){
+      propostas++;
+      dStatus[st]=(dStatus[st]||0)+1;
+      if(PAGOs.has(st)){pagas++; valor+=(val||0);}
+      if(PENDs.has(st))pend++;
+      if(PERDAs.has(st)){perdas++; const key=st.toLowerCase(); motivos[key]=(motivos[key]||0)+1;}
+    }
+    if(bank){dBanco[bank]=(dBanco[bank]||0)+1;}
+    // motivos por tags de perda
+    if(Array.isArray(tags))for(const tg of tags){ if(PERDA_TAGS.has(tg)){motivos[tg]=(motivos[tg]||0)+1; perdas++;} }
+    // funil: simulou/ofertou
+    const tagSim=Array.isArray(tags)&&tags.some(t=>SIM_TAGS.has(t));
+    if(SIM_STAGES.has(r[R_STAGE])||tagSim)comSim++;
+    // timeline (48h, por dia já que só temos data)
+    if(r[R_DATE]&&r[R_DATE]>=limite48Str){ tl[r[R_DATE]]=(tl[r[R_DATE]]||0)+1; }
+  }
+  const taxa=propostas?Math.round(pagas/propostas*1000)/10:0;
+
+  // helper: top-N de um dicionário [label,count]
+  const top=(obj,n)=>Object.entries(obj).sort((a,b)=>b[1]-a[1]).slice(0,n);
+
+  // monta objeto de render compatível com os gráficos antigos
+  const d={
+    kpis:{leads,propostas,pagas,valor,pend,perdas,taxa},
+    funil:[leads,comSim,propostas,pagas],
+    por_fase:top(dFase,12),
+    por_status:top(dStatus,10),
+    por_produto:top(dProd,8),
+    por_banco:top(dBanco,8),
+    por_campanha:top(dCamp,8),
+    timeline:Object.entries(tl).sort((a,b)=>a[0]<b[0]?-1:1).map(([k,v])=>[dataBR(k),v]),
+    motivos:top(motivos,8),
+    historico:S.historico||[],
+  };
+  renderPainel(d);
+
+  // 7. Operacional: filtra recentes e pendencias e re-renderiza
+  renderOperacional();
+}
+
+// Filtro client-side de um registro de recentes/pendencias
+function passaOpe(r){
+  const fp=selections.produto, fb=selections.banco, fc=selections.campanha,
+        fs=selections.status, ffa=selections.fase, ft=selections.tag;
+  if(fp.size && !fp.has(r.product))return false;
+  if(ffa.size && !ffa.has(r.stage))return false;
+  if(fb.size && !fb.has(r.bank))return false;
+  if(fs.size && !fs.has(r.status))return false;
+  if(ft.size){ if(!Array.isArray(r.tags)||!r.tags.some(t=>ft.has(t)))return false; }
+  // campanha não existe nos registros operacionais -> ignora se filtrado
+  const corte=periodoCorte();
+  if(corte && r.updated_at){ if(new Date(r.updated_at)<corte)return false; }
+  else if(corte && !r.updated_at)return false;
+  return true;
 }
 
 // Render
@@ -309,8 +426,8 @@ function mk(id,cfg){const light=document.documentElement.getAttribute('data-them
   cfg.options.scales=cfg.options.scales||{};['x','y'].forEach(a=>{cfg.options.scales[a]=cfg.options.scales[a]||{};cfg.options.scales[a].grid={color:tc.grid};cfg.options.scales[a].ticks={color:tc.text};});
   if(charts[id])charts[id].destroy();charts[id]=new Chart(document.getElementById(id),cfg);}
 
-function renderPainel(){
-  const d=DADOS,k=d.kpis;
+function renderPainel(d){
+  const k=d.kpis;
   document.getElementById('kpis').innerHTML=`
     <div class="kpi blue"><div class="v">${k.leads.toLocaleString('pt-BR')}</div><div class="l">Leads</div></div>
     <div class="kpi"><div class="v">${k.propostas.toLocaleString('pt-BR')}</div><div class="l">Propostas</div></div>
@@ -333,25 +450,30 @@ function renderPainel(){
     {label:'Propostas',data:h.map(x=>x[2]),borderColor:C.warn,backgroundColor:'transparent',tension:.3,pointRadius:3},
     {label:'Pagas',data:h.map(x=>x[3]),borderColor:C.ok,backgroundColor:'transparent',tension:.3,pointRadius:3}]},
     options:{plugins:{legend:{position:'top'}}}});
+  if(window.lucide)lucide.createIcons();
+}
 
-  // Operacional
+function renderOperacional(){
+  const S=window.SNAP; if(!S)return;
   const agc=x=>x>=3?'aging-bad':x>=1?'aging-warn':'aging-ok';
+  const pend=(S.pendencias||[]).filter(passaOpe);
   document.getElementById('kpis_ope').innerHTML=`
-    <div class="kpi warn"><div class="v">${d.pendencias.length}</div><div class="l">Pendências (na lista)</div></div>
-    <div class="kpi red"><div class="v">${d.pendencias.filter(r=>diasParado(r.updated_at)>=3).length}</div><div class="l">Parados há 3+ dias</div></div>
-    <div class="kpi blue"><div class="v">${d.recentes.length.toLocaleString('pt-BR')}</div><div class="l">Atendimentos recentes</div></div>`;
-  document.querySelector('#tab_pend tbody').innerHTML=d.pendencias.map(r=>`<tr><td class="cliente-nome">${r.cliente}</td><td>${r.cpf}</td><td>${r.product}</td><td>${r.bank||'-'}</td><td><span class="pill pend">${r.status}</span></td><td>${r.stage}</td><td>${r.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</td><td class="${agc(diasParado(r.updated_at))}">${diasParado(r.updated_at)} dia(s)</td></tr>`).join('')||'<tr><td colspan="8" class="muted">Sem pendências. 🎉</td></tr>';
+    <div class="kpi warn"><div class="v">${pend.length}</div><div class="l">Pendências (na lista)</div></div>
+    <div class="kpi red"><div class="v">${pend.filter(r=>diasParado(r.updated_at)>=3).length}</div><div class="l">Parados há 3+ dias</div></div>
+    <div class="kpi blue"><div class="v">${(S.recentes||[]).filter(passaOpe).length.toLocaleString('pt-BR')}</div><div class="l">Atendimentos recentes</div></div>`;
+  document.querySelector('#tab_pend tbody').innerHTML=pend.map(r=>`<tr><td class="cliente-nome">${r.nome}</td><td>${r.cpf}</td><td>${r.product}</td><td>${r.bank||'-'}</td><td><span class="pill pend">${r.status}</span></td><td>${r.stage}</td><td>${r.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</td><td class="${agc(diasParado(r.updated_at))}">${diasParado(r.updated_at)} dia(s)</td></tr>`).join('')||'<tr><td colspan="8" class="muted">Sem pendências. 🎉</td></tr>';
   renderRecentes();
   if(window.lucide)lucide.createIcons();
 }
 
 function renderRecentes(){
+  const S=window.SNAP; if(!S)return;
   const b=document.getElementById('o_busca').value.toLowerCase().trim();
-  const R=DADOS.recentes.filter(r=>{
-    if(b&&!((r.cliente||'').toLowerCase().includes(b)||(r.cpf||'').includes(b)))return false;return true;});
+  const R=(S.recentes||[]).filter(passaOpe).filter(r=>{
+    if(b&&!((r.nome||'').toLowerCase().includes(b)||(r.cpf||'').includes(b)))return false;return true;});
   const cls=r=>PAGO.includes(r.status)?'pago':PEND.includes(r.status)?'pend':PERDA.includes(r.status)?'perda':'neutro';
   document.getElementById('ope_count').textContent=R.length.toLocaleString('pt-BR');
-  document.querySelector('#tab_all tbody').innerHTML=R.map(r=>`<tr><td class="cliente-nome">${r.cliente}</td><td>${r.cpf}</td><td>${r.product}</td><td>${r.stage}</td><td>${r.status?`<span class="pill ${cls(r)}">${r.status}</span>`:'-'}</td><td>${r.bank||'-'}</td><td>${r.liquid_value?brl(r.liquid_value):'-'}</td><td>${r.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</td><td>${dataBR(r.updated_at)}</td></tr>`).join('');
+  document.querySelector('#tab_all tbody').innerHTML=R.map(r=>`<tr><td class="cliente-nome">${r.nome}</td><td>${r.cpf}</td><td>${r.product}</td><td>${r.stage}</td><td>${r.status?`<span class="pill ${cls(r)}">${r.status}</span>`:'-'}</td><td>${r.bank||'-'}</td><td>${r.liquid_value?brl(r.liquid_value):'-'}</td><td>${r.tags.map(t=>`<span class="tag">${t}</span>`).join('')}</td><td>${dataBR(r.updated_at)}</td></tr>`).join('');
 }
 function setView(v){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.v===v));document.getElementById('view-ger').classList.toggle('hidden',v!=='ger');document.getElementById('view-ope').classList.toggle('hidden',v!=='ope');}
 
@@ -364,8 +486,8 @@ async function iniciar(){
   document.getElementById('login').classList.add('hidden');document.getElementById('app').classList.remove('hidden');
   setScale(parseInt(localStorage.getItem('nova_scale')||'100'));
   document.getElementById('o_busca').oninput=renderRecentes;
-  await carregarPerfil();await carregarDados();
-  if(!window._poll)window._poll=setInterval(verificar,120000);}
+  await carregarPerfil();await carregarSnapshot();
+  if(!window._poll)window._poll=setInterval(carregarSnapshot,120000);}
 
 // Usuários (RPC)
 async function rpc(fn,args){const t=await tok();
