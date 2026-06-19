@@ -129,6 +129,7 @@ tbody tr:hover{background:var(--glass)}
         <div class="card"><h3><i data-lucide="landmark"></i>Propostas por banco</h3><canvas id="ch_banco"></canvas></div>
         <div class="card"><h3><i data-lucide="megaphone"></i>Leads por campanha</h3><canvas id="ch_camp"></canvas></div>
         <div class="card full"><h3><i data-lucide="line-chart"></i>Leads por hora (48h)</h3><canvas id="ch_time"></canvas></div>
+        <div class="card full"><h3><i data-lucide="calendar-range"></i>Evolução diária (histórico permanente)</h3><canvas id="ch_hist"></canvas></div>
       </div>
     </div>
 
@@ -261,6 +262,12 @@ function renderPainel(){
   mk('ch_banco',{type:'bar',data:{labels:d.por_banco.map(x=>x[0]),datasets:[{data:d.por_banco.map(x=>x[1]),backgroundColor:C.navy}]},options:{plugins:{legend:{display:false}}}});
   mk('ch_camp',{type:'bar',data:{labels:d.por_campanha.map(x=>x[0]),datasets:[{data:d.por_campanha.map(x=>x[1]),backgroundColor:C.blueLt}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
   mk('ch_time',{type:'line',data:{labels:d.timeline.map(x=>x[0]),datasets:[{label:'Leads',data:d.timeline.map(x=>x[1]),borderColor:C.blue,backgroundColor:'rgba(61,123,255,.15)',fill:true,tension:.3,pointRadius:1}]},options:{plugins:{legend:{display:false}}}});
+  const h=d.historico||[];
+  mk('ch_hist',{type:'line',data:{labels:h.map(x=>x[0]),datasets:[
+    {label:'Leads',data:h.map(x=>x[1]),borderColor:C.blue,backgroundColor:'rgba(61,123,255,.12)',fill:true,tension:.3,pointRadius:3},
+    {label:'Propostas',data:h.map(x=>x[2]),borderColor:C.warn,backgroundColor:'transparent',tension:.3,pointRadius:3},
+    {label:'Pagas',data:h.map(x=>x[3]),borderColor:C.ok,backgroundColor:'transparent',tension:.3,pointRadius:3}]},
+    options:{plugins:{legend:{position:'top'}}}});
 
   // Operacional
   const agc=x=>x>=3?'aging-bad':x>=1?'aging-warn':'aging-ok';
