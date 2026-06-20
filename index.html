@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Painel Pronto — Nova Promotora</title>
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%231A2B40'/%3E%3Ctext x='50' y='69' font-size='54' text-anchor='middle' fill='%233D7BFF' font-family='Arial' font-weight='bold'%3EN%3C/text%3E%3C/svg%3E">
+<link rel="icon" type="image/png" href="favicon-pronto.png">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
@@ -124,7 +124,7 @@ tbody tr:hover{background:var(--glass)}
 <!-- LOGIN -->
 <div id="login">
   <form class="loginbox" onsubmit="entrar(event)">
-    <div class="llogo"><div class="mk">N</div><div><h2>Painel <span style="color:var(--blue)">Pronto</span></h2><p>Nova Promotora · acesso restrito</p></div></div>
+    <div class="llogo"><img src="logo-pronto.png" alt="Pronto" style="height:34px;background:#fff;border-radius:8px;padding:4px 8px"><div><h2>Painel <span style="color:var(--blue)">Gerencial</span></h2><p>Nova Promotora · acesso restrito</p></div></div>
     <label for="email">E-mail</label><input id="email" type="email" autocomplete="username" required>
     <label for="senha">Senha</label><input id="senha" type="password" autocomplete="current-password" required>
     <button class="btn-primary" type="submit" id="btnentrar">Entrar</button>
@@ -135,7 +135,7 @@ tbody tr:hover{background:var(--glass)}
 <!-- APP -->
 <div id="app" class="hidden">
   <div class="topbar">
-    <div class="brand"><div class="mk">N</div>Painel <span>Pronto</span></div>
+    <div class="brand"><img src="logo-pronto.png" alt="Pronto" style="height:26px;background:#fff;border-radius:6px;padding:2px 6px"></div>
     <div class="right">
       <span id="lastupd" style="font-size:12px"></span>
       <div class="seg" title="Tamanho do texto"><button id="sc100" onclick="setScale(100)">A</button><button id="sc125" onclick="setScale(125)">A+</button><button id="sc155" onclick="setScale(155)">A++</button></div>
