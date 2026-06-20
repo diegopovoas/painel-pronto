@@ -493,12 +493,28 @@ function renderRecentes(){
 }
 // Raias operacionais por empresa (filtro local — não recarrega a API, só reexibe os dados já trazidos)
 let raiaFiltro=null;
-function raiaCor(n){if(!n)return{bg:'var(--glass)',fg:'var(--muted)'};if(n<=5)return{bg:'rgba(210,153,34,.16)',fg:'var(--warn)'};return{bg:'rgba(207,25,15,.16)',fg:'var(--red)'};}
-function raiaMetric(label,v,colorir){const c=colorir?raiaCor(v):{bg:'var(--glass)',fg:'var(--text)'};
+const RAIA_BUCKET={SEM_PROPOSTA:'sem_proposta',PROCESSING:'processando',WAITING_RISK_ANALYSIS:'analise',
+  PENDED:'pendencia',PENDED_AI_HANDLE:'pendencia',PENDED_BANK:'pendencia',PENDED_DOCS:'pendencia',
+  FORMALIZATION_REQUESTED:'formalizacao',FORMALIZATION_COMPLETED:'formalizacao',
+  LIQUIDATED_TO_CUSTOMER:'pago',REJECTED:'perdido',CANCELED:'perdido'};
+const RAIA_ORDER=['sem_proposta','processando','analise','pendencia','formalizacao','pago','perdido'];
+const RAIA_LABEL={sem_proposta:'Sem proposta ainda (atendimento/simulação)',processando:'Processando',analise:'Aguardando análise',
+  pendencia:'Em pendência',formalizacao:'Formalização',pago:'Pago',perdido:'Perdido'};
+const RAIA_COLOR={sem_proposta:{bg:'var(--glass)',fg:'var(--muted)'},processando:{bg:'rgba(61,123,255,.13)',fg:'var(--blue)'},
+  analise:{bg:'rgba(61,123,255,.13)',fg:'var(--blue)'},pendencia:{bg:'rgba(210,153,34,.16)',fg:'var(--warn)'},
+  formalizacao:{bg:'rgba(61,123,255,.13)',fg:'var(--blue)'},pago:{bg:'rgba(63,185,80,.16)',fg:'var(--ok)'},perdido:{bg:'rgba(207,25,15,.16)',fg:'var(--red)'}};
+function raiaMetric(label,v,bucket){const c=RAIA_COLOR[bucket];
   return `<div class="raia-metric" style="background:${c.bg}"><div class="l" style="color:${c.fg}">${label}</div><div class="v" style="color:${c.fg}">${(v||0).toLocaleString('pt-BR')}</div></div>`;}
-function raiaMetricsRow(r,colorir){return raiaMetric('Leads ativos',r.ativos,false)+raiaMetric('Em pendência',r.pend,false)+raiaMetric('Parados 3d+',r.parados3d,colorir)+raiaMetric('Tags de risco',r.risco,colorir)+raiaMetric('Aguard. análise',r.risk_analysis,false)+raiaMetric('Formalização',r.formaliz,false);}
+function raiaMetricsRow(r){return `<div class="raia-metric" style="background:var(--navy)"><div class="l" style="color:#fff;opacity:.85">Total de leads</div><div class="v" style="color:#fff">${r.total.toLocaleString('pt-BR')}</div></div>`+
+  RAIA_ORDER.map(b=>raiaMetric(RAIA_LABEL[b],r.buckets[b]||0,b)).join('');}
 function renderRaias(rows){
-  window._raiasData=rows.map(x=>({emp:x[0],ativos:x[1],pend:x[2],parados3d:x[3],risco:x[4],risk_analysis:x[5],formaliz:x[6]}));
+  const porEmp={};
+  rows.forEach(([emp,status,count])=>{
+    const bucket=RAIA_BUCKET[status]||'sem_proposta';
+    if(!porEmp[emp])porEmp[emp]={emp,total:0,buckets:{}};
+    porEmp[emp].total+=count; porEmp[emp].buckets[bucket]=(porEmp[emp].buckets[bucket]||0)+count;
+  });
+  window._raiasData=Object.values(porEmp).sort((a,b)=>b.total-a.total);
   if(raiaFiltro && !window._raiasData.some(r=>r.emp===raiaFiltro)) raiaFiltro=null;
   const chips=document.getElementById('raia_chips');
   chips.innerHTML=window._raiasData.map(r=>`<button class="raia-chip" data-emp="${r.emp.replace(/"/g,'&quot;')}">${dp('campanha',r.emp)}</button>`).join('')+
@@ -515,15 +531,16 @@ function renderRaiasView(){
   if(raiaFiltro){
     const r=list.find(x=>x.emp===raiaFiltro);
     document.getElementById('raia_total_title').textContent=dp('campanha',raiaFiltro);
-    document.getElementById('raia_total_metrics').innerHTML=raiaMetricsRow(r,true);
+    document.getElementById('raia_total_metrics').innerHTML=raiaMetricsRow(r);
   }else{
-    const tot=list.reduce((a,r)=>({ativos:a.ativos+r.ativos,pend:a.pend+r.pend,parados3d:a.parados3d+r.parados3d,risco:a.risco+r.risco,risk_analysis:a.risk_analysis+r.risk_analysis,formaliz:a.formaliz+r.formaliz}),{ativos:0,pend:0,parados3d:0,risco:0,risk_analysis:0,formaliz:0});
+    const tot={total:0,buckets:{}};
+    list.forEach(r=>{tot.total+=r.total;RAIA_ORDER.forEach(b=>tot.buckets[b]=(tot.buckets[b]||0)+(r.buckets[b]||0));});
     document.getElementById('raia_total_title').textContent='Todas as empresas';
-    document.getElementById('raia_total_metrics').innerHTML=raiaMetricsRow(tot,false);
+    document.getElementById('raia_total_metrics').innerHTML=raiaMetricsRow(tot);
   }
   document.getElementById('raia_lanes').innerHTML=list.filter(r=>!raiaFiltro||r.emp===raiaFiltro).map(r=>
     `<div class="raia-lane"><div class="hd">${dp('campanha',r.emp)}</div>
-      <div style="display:flex;gap:.5rem;flex-wrap:wrap">${raiaMetricsRow(r,true)}</div></div>`).join('');
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">${raiaMetricsRow(r)}</div></div>`).join('');
 }
 function setView(v){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.v===v));document.getElementById('view-ger').classList.toggle('hidden',v!=='ger');document.getElementById('view-ope').classList.toggle('hidden',v!=='ope');}
 
