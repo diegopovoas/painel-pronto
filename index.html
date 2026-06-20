@@ -105,6 +105,10 @@ tbody tr:hover{background:var(--glass)}
 .ms-actions button{flex:1;background:none;border:none;color:var(--blue);font-size:.74rem;font-weight:600;cursor:pointer;padding:.2rem 0}
 .ms-actions button:hover{text-decoration:underline}
 .fclear{background:rgba(207,25,15,.1);border:1px solid rgba(207,25,15,.35);color:#ff8a82;border-radius:8px;padding:.5rem;font-size:.78rem;font-weight:600;cursor:pointer}
+.naomap{background:rgba(210,153,34,.13);border:1px solid rgba(210,153,34,.4);color:var(--warn);border-radius:12px;padding:.7rem 1rem;margin-bottom:1rem;font-size:.82rem;display:flex;align-items:flex-start;gap:.6rem}
+.naomap i{flex-shrink:0;margin-top:1px;width:18px;height:18px}
+.naomap b{color:var(--text)}
+.naomap .x{margin-left:auto;background:none;border:none;color:var(--warn);cursor:pointer;font-size:1rem;line-height:1;flex-shrink:0}
 
 /* Raias operacionais por empresa */
 .raia-chip{font-size:.72rem;padding:.32rem .8rem;border-radius:20px;border:1px solid var(--glassb);background:transparent;color:var(--text);cursor:pointer;font-weight:600}
@@ -162,6 +166,7 @@ tbody tr:hover{background:var(--glass)}
   </div>
   <div class="loading" id="loading">atualizando...</div>
   <div class="wrap">
+    <div class="naomap" id="naomap" style="display:none"></div>
     <div class="fbar" id="fbar">
       <div><label>Período</label><select id="f_periodo"><option value="0">Tudo</option><option value="1">Hoje</option><option value="7">Últimos 7 dias</option><option value="30">Últimos 30 dias</option></select></div>
       <div class="ms" data-key="produto"><label>Produto</label></div>
@@ -298,6 +303,7 @@ async function carregarDados(){
     DADOS=await r.json(); _lastUpd=new Date().toISOString();
     document.getElementById('lastupd').textContent='● atualizado '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     if(DADOS.opcoes && !_filtrosProntos){ montarFiltros(DADOS.opcoes); _filtrosProntos=true; }
+    if(DADOS.opcoes) checkNaoMapeados(DADOS.opcoes);
     renderPainel();
   }catch(ex){ toast('Erro ao carregar: '+ex.message); }
   finally{ ld.style.display='none'; }
@@ -390,6 +396,21 @@ const DEPARA={
   campanha:{22206:'Pronto J17',23691:'Pronto IMD',26134:'Sethi',26529:'Fidem',27024:'CDC','(sem empresa)':'Sem empresa'}
 };
 function dp(tipo,val){ return (DEPARA[tipo]&&DEPARA[tipo][val]) || val; }
+// Avisa quando aparece um código novo (empresa/produto/fase/status/tag) que ainda não tem nome traduzido no DEPARA
+const TIPOS_NAOMAP={produto:'Produto',campanha:'Empresa',fase:'Fase',status:'Status',tag:'Etiqueta'};
+function checkNaoMapeados(opcoes){
+  const achados=[];
+  for(const tipo in TIPOS_NAOMAP){
+    (opcoes[tipo]||[]).forEach(v=>{ if(v && !(DEPARA[tipo]&&DEPARA[tipo][v])) achados.push(TIPOS_NAOMAP[tipo]+': '+v); });
+  }
+  const box=document.getElementById('naomap');
+  if(!achados.length){ box.style.display='none'; return; }
+  box.style.display='flex';
+  box.innerHTML=`<i data-lucide="alert-triangle"></i><div><b>${achados.length} valor(es) novo(s) sem tradução no painel:</b> ${achados.join(', ')}.
+    Os números já contam isso certinho, só falta eu (Claude) mapear o nome bonito — me avise pra eu ajustar.</div>
+    <button class="x" onclick="this.closest('.naomap').style.display='none'">×</button>`;
+  if(window.lucide)lucide.createIcons();
+}
 let charts={};
 function tcText(){return document.documentElement.getAttribute('data-theme')==='light'?'#5D6880':'#9AA6BA';}
 function numAbbr(v){v=v||0;const abs=Math.abs(v);
