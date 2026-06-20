@@ -399,6 +399,7 @@ function dp(tipo,val){ return (DEPARA[tipo]&&DEPARA[tipo][val]) || val; }
 // Avisa quando aparece um código novo (empresa/produto/fase/status/tag) que ainda não tem nome traduzido no DEPARA
 const TIPOS_NAOMAP={produto:'Produto',campanha:'Empresa',fase:'Fase',status:'Status',tag:'Etiqueta'};
 function checkNaoMapeados(opcoes){
+  if(!sess||sess.email!=='admin@novapromotora.com'){ document.getElementById('naomap').style.display='none'; return; }
   const achados=[];
   for(const tipo in TIPOS_NAOMAP){
     (opcoes[tipo]||[]).forEach(v=>{ if(v && !(DEPARA[tipo]&&DEPARA[tipo][v])) achados.push(TIPOS_NAOMAP[tipo]+': '+v); });
