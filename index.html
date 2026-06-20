@@ -166,6 +166,11 @@ tbody tr:hover{background:var(--glass)}
 
     <div id="view-ger">
       <div class="kpis" id="kpis"></div>
+      <div class="grid" style="margin-bottom:1rem">
+        <div class="card"><h3><i data-lucide="building-2"></i>Produção por empresa (mês atual)</h3><canvas id="ch_prod_emp"></canvas></div>
+        <div class="card"><h3><i data-lucide="calendar-days"></i>Pagamentos por dia (mês atual)</h3><canvas id="ch_pag_dia"></canvas></div>
+        <div class="card"><h3><i data-lucide="trending-up"></i>Projeção do mês por empresa</h3><canvas id="ch_proj_emp"></canvas></div>
+      </div>
       <div class="grid">
         <div class="card"><h3><i data-lucide="filter"></i>Funil de conversão</h3><canvas id="ch_funil"></canvas></div>
         <div class="card"><h3><i data-lucide="map-pin"></i>Leads por fase</h3><canvas id="ch_fase"></canvas></div>
@@ -350,7 +355,8 @@ const PAGO=['LIQUIDATED_TO_CUSTOMER'],PEND=['PENDED_AI_HANDLE','PENDED_BANK','PE
 const DEPARA={
   status:{WAITING_RISK_ANALYSIS:'Aguardando Análise',LIQUIDATED_TO_CUSTOMER:'Pago ao Cliente',FORMALIZATION_REQUESTED:'Formalização',
     PROCESSING:'Em Processamento',REJECTED:'Reprovado',PENDED_AI_HANDLE:'Pendente IA',CANCELED:'Cancelado',
-    PENDED_DOCS:'Pendente Documentos',PENDED_BANK:'Pendente Banco',PENDED:'Pendente Geral'},
+    PENDED_DOCS:'Pendente Documentos',PENDED_BANK:'Pendente Banco',PENDED:'Pendente Geral',
+    FORMALIZATION_COMPLETED:'Formalização Concluída'},
   produto:{clt:'CLT',micro_credito_vdi:'Crédito Pessoal',fgts:'FGTS','(sem produto)':'Sem produto',
     carro_assinatura:'Financiamento de veículos',renda_extra:'Crédito Pessoal'},
   motivo:{nao_autorizado:'Cliente não autorizou venda',rejeitado:'Rejeitado',rejected:'Rejeitado',canceled:'Cancelada'},
@@ -377,6 +383,7 @@ const DEPARA={
 };
 function dp(tipo,val){ return (DEPARA[tipo]&&DEPARA[tipo][val]) || val; }
 let charts={};
+function tcText(){return document.documentElement.getAttribute('data-theme')==='light'?'#5D6880':'#9AA6BA';}
 if(window.ChartDataLabels)Chart.register(window.ChartDataLabels);
 function mk(id,cfg){const light=document.documentElement.getAttribute('data-theme')==='light';
   const tc={text:light?'#5D6880':'#9AA6BA',grid:light?'rgba(16,24,42,.08)':'rgba(255,255,255,.06)'};
@@ -390,7 +397,7 @@ function mk(id,cfg){const light=document.documentElement.getAttribute('data-them
     cfg.options.plugins.datalabels={color:'#fff',font:{size:10,weight:700,family:'Sora'},
       formatter:(v,ctx)=>{const arr=ctx.chart.data.datasets[0].data;const tot=arr.reduce((a,b)=>a+b,0);return tot?Math.round(v/tot*100)+'%':'';}};
   } else if(cfg.type==='bar'){
-    cfg.options.plugins.datalabels={color:tc.text,font:{size:10,weight:700,family:'Sora'},
+    cfg.options.plugins.datalabels=cfg.options.plugins.datalabels||{color:tc.text,font:{size:10,weight:700,family:'Sora'},
       anchor:'end',align:'end',clamp:true,formatter:v=>(v||0).toLocaleString('pt-BR')};
   }
   if(charts[id])charts[id].destroy();charts[id]=new Chart(document.getElementById(id),cfg);}
@@ -405,6 +412,16 @@ function renderPainel(){
     <div class="kpi warn"><div class="v">${k.pend.toLocaleString('pt-BR')}</div><div class="l">Em pendência</div></div>
     <div class="kpi red"><div class="v">${k.perdas.toLocaleString('pt-BR')}</div><div class="l">Perdidos</div></div>
     <div class="kpi"><div class="v">${k.taxa}%</div><div class="l">Conversão proposta→paga</div></div>`;
+  const pe_emp=d.producao_por_empresa||[],pj_emp=d.projecao_por_empresa||[],pg_dia=d.pagamentos_por_dia||[];
+  mk('ch_prod_emp',{type:'bar',data:{labels:pe_emp.map(x=>dp('campanha',x[0])),datasets:[{data:pe_emp.map(x=>x[1]),backgroundColor:C.ok}]},
+    options:{indexAxis:'y',plugins:{legend:{display:false},datalabels:{color:tcText(),font:{size:10,weight:700,family:'Sora'},anchor:'end',align:'end',clamp:true,formatter:v=>brl(v)}}}});
+  mk('ch_pag_dia',{type:'bar',data:{labels:pg_dia.map(x=>x[0]),datasets:[{data:pg_dia.map(x=>x[1]),backgroundColor:C.blue}]},
+    options:{plugins:{legend:{display:false},datalabels:{display:false},
+      tooltip:{callbacks:{label:ctx=>brl(ctx.parsed.y)}}}}});
+  mk('ch_proj_emp',{type:'bar',data:{labels:pj_emp.map(x=>dp('campanha',x[0])),datasets:[
+    {label:'Realizado',data:pj_emp.map(x=>x[1]),backgroundColor:C.ok},
+    {label:'Projeção do mês',data:pj_emp.map(x=>x[2]),backgroundColor:C.blueLt}]},
+    options:{indexAxis:'y',plugins:{legend:{position:'top'},datalabels:{color:tcText(),font:{size:9,weight:700,family:'Sora'},anchor:'end',align:'end',clamp:true,formatter:v=>brl(v)}}}});
   mk('ch_funil',{type:'bar',data:{labels:['Leads','Simulou/Ofertou','Proposta','Pagas'],datasets:[{data:d.funil,backgroundColor:[C.blue,C.blueLt,C.warn,C.ok]}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
   mk('ch_fase',{type:'bar',data:{labels:d.por_fase.map(x=>dp('fase',x[0])),datasets:[{data:d.por_fase.map(x=>x[1]),backgroundColor:C.blue}]},options:{indexAxis:'y',aspectRatio:1.1,plugins:{legend:{display:false}}}});
   mk('ch_status',{type:'bar',data:{labels:d.por_status.map(x=>dp('status',x[0])),datasets:[{data:d.por_status.map(x=>x[1]),backgroundColor:d.por_status.map(x=>PAGO.includes(x[0])?C.ok:PEND.includes(x[0])?C.warn:PERDA.includes(x[0])?C.red:C.blue)}]},options:{indexAxis:'y',aspectRatio:1.4,plugins:{legend:{display:false}}}});
