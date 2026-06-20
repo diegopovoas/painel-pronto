@@ -198,7 +198,7 @@ tbody tr:hover{background:var(--glass)}
         <div class="card"><h3><i data-lucide="landmark"></i>Propostas por banco</h3><canvas id="ch_banco"></canvas></div>
         <div class="card"><h3><i data-lucide="megaphone"></i>Leads por empresa</h3><canvas id="ch_camp"></canvas></div>
         <div class="card full"><h3><i data-lucide="line-chart"></i>Leads por hora (48h)</h3><canvas id="ch_time"></canvas></div>
-        <div class="card full"><h3><i data-lucide="calendar-range"></i>Evolução diária (histórico permanente)</h3><canvas id="ch_hist"></canvas></div>
+        <div class="card full"><h3><i data-lucide="calendar-range"></i>Leads por dia (histórico permanente)</h3><canvas id="ch_hist"></canvas></div>
       </div>
     </div>
 
@@ -469,10 +469,8 @@ function renderPainel(){
   mk('ch_time',{type:'line',data:{labels:d.timeline.map(x=>x[0]),datasets:[{label:'Leads',data:d.timeline.map(x=>x[1]),borderColor:C.blue,backgroundColor:'rgba(61,123,255,.15)',fill:true,tension:.3,pointRadius:1}]},options:{plugins:{legend:{display:false}}}});
   const h=d.historico||[];
   mk('ch_hist',{type:'line',data:{labels:h.map(x=>x[0]),datasets:[
-    {label:'Leads',data:h.map(x=>x[1]),borderColor:C.blue,backgroundColor:'rgba(61,123,255,.12)',fill:true,tension:.3,pointRadius:3},
-    {label:'Propostas',data:h.map(x=>x[2]),borderColor:C.warn,backgroundColor:'transparent',tension:.3,pointRadius:3},
-    {label:'Pagas',data:h.map(x=>x[3]),borderColor:C.ok,backgroundColor:'transparent',tension:.3,pointRadius:3}]},
-    options:{plugins:{legend:{position:'top'}}}});
+    {label:'Leads',data:h.map(x=>x[1]),borderColor:C.blue,backgroundColor:'rgba(61,123,255,.12)',fill:true,tension:.3,pointRadius:3}]},
+    options:{plugins:{legend:{display:false}}}});
 
   // Operacional
   document.getElementById('kpis_ope').innerHTML=`
