@@ -211,23 +211,6 @@ tbody tr:hover{background:var(--glass)}
         </div>
         <div id="raia_lanes" style="display:flex;flex-direction:column;gap:.6rem"></div>
       </div>
-      <div class="card full" style="margin-bottom:1rem">
-        <h3><i data-lucide="building-2"></i>Pendências por empresa</h3>
-        <canvas id="ch_pend_emp" height="80"></canvas>
-      </div>
-      <div class="card full" style="margin-bottom:1rem">
-        <h3><i data-lucide="alert-triangle"></i>Fila de pendências</h3>
-        <div class="muted" style="margin-bottom:.6rem">Casos parados, do mais antigo ao mais novo.</div>
-        <div class="tablewrap"><table id="tab_pend"><thead><tr><th>Cliente</th><th>CPF</th><th>Produto</th><th>Banco</th><th>Status</th><th>Fase</th><th>Etiquetas</th><th>Parado há</th></tr></thead><tbody></tbody></table></div>
-      </div>
-      <div class="card full">
-        <h3><i data-lucide="table"></i>Atendimentos recentes</h3>
-        <div class="opfilters">
-          <input id="o_busca" placeholder="🔎 buscar cliente ou CPF na lista...">
-        </div>
-        <div class="muted" style="margin-bottom:.5rem"><span id="ope_count"></span> registros recentes</div>
-        <div class="tablewrap"><table id="tab_all"><thead><tr><th>Cliente</th><th>CPF</th><th>Produto</th><th>Fase</th><th>Status</th><th>Banco</th><th>Valor líq.</th><th>Etiquetas</th><th>Atualizado</th></tr></thead><tbody></tbody></table></div>
-      </div>
     </div>
   </div>
 </div>
@@ -470,27 +453,14 @@ function renderPainel(){
     options:{plugins:{legend:{position:'top'}}}});
 
   // Operacional
-  const agc=x=>x>=3?'aging-bad':x>=1?'aging-warn':'aging-ok';
   document.getElementById('kpis_ope').innerHTML=`
     <div class="kpi warn"><div class="v">${d.pendencias.length}</div><div class="l">Pendências (na lista)</div></div>
     <div class="kpi red"><div class="v">${d.pendencias.filter(r=>diasParado(r.updated_at)>=3).length}</div><div class="l">Parados há 3+ dias</div></div>
     <div class="kpi blue"><div class="v">${d.recentes.length.toLocaleString('pt-BR')}</div><div class="l">Atendimentos recentes</div></div>`;
-  const pe=d.pendencias_por_empresa||[];
-  mk('ch_pend_emp',{type:'bar',data:{labels:pe.map(x=>dp('campanha',x[0])),datasets:[{label:'Pendências',data:pe.map(x=>x[1]),backgroundColor:C.warn}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
   renderRaias(d.raias_por_empresa||[]);
-  document.querySelector('#tab_pend tbody').innerHTML=d.pendencias.map(r=>`<tr><td class="cliente-nome">${r.cliente}</td><td>${r.cpf}</td><td>${dp('produto',r.product)}</td><td>${r.bank||'-'}</td><td><span class="pill pend">${dp('status',r.status)}</span></td><td>${dp('fase',r.stage)}</td><td>${r.tags.map(t=>`<span class="tag">${dp('tag',t)}</span>`).join('')}</td><td class="${agc(diasParado(r.updated_at))}">${diasParado(r.updated_at)} dia(s)</td></tr>`).join('')||'<tr><td colspan="8" class="muted">Sem pendências. 🎉</td></tr>';
-  renderRecentes();
   if(window.lucide)lucide.createIcons();
 }
 
-function renderRecentes(){
-  const b=document.getElementById('o_busca').value.toLowerCase().trim();
-  const R=DADOS.recentes.filter(r=>{
-    if(b&&!((r.cliente||'').toLowerCase().includes(b)||(r.cpf||'').includes(b)))return false;return true;});
-  const cls=r=>PAGO.includes(r.status)?'pago':PEND.includes(r.status)?'pend':PERDA.includes(r.status)?'perda':'neutro';
-  document.getElementById('ope_count').textContent=R.length.toLocaleString('pt-BR');
-  document.querySelector('#tab_all tbody').innerHTML=R.map(r=>`<tr><td class="cliente-nome">${r.cliente}</td><td>${r.cpf}</td><td>${dp('produto',r.product)}</td><td>${dp('fase',r.stage)}</td><td>${r.status?`<span class="pill ${cls(r)}">${dp('status',r.status)}</span>`:'-'}</td><td>${r.bank||'-'}</td><td>${r.liquid_value?brl(r.liquid_value):'-'}</td><td>${r.tags.map(t=>`<span class="tag">${dp('tag',t)}</span>`).join('')}</td><td>${dataBR(r.updated_at)}</td></tr>`).join('');
-}
 // Raias operacionais por empresa (filtro local — não recarrega a API, só reexibe os dados já trazidos)
 let raiaFiltro=null;
 const RAIA_BUCKET={SEM_PROPOSTA:'sem_proposta',PROCESSING:'processando',WAITING_RISK_ANALYSIS:'analise',
@@ -552,7 +522,6 @@ async function carregarPerfil(){const t=await tok();
 async function iniciar(){
   document.getElementById('login').classList.add('hidden');document.getElementById('app').classList.remove('hidden');
   setScale(parseInt(localStorage.getItem('nova_scale')||'100'));
-  document.getElementById('o_busca').oninput=renderRecentes;
   await carregarPerfil();await carregarDados();
   if(!window._poll)window._poll=setInterval(verificar,120000);}
 
