@@ -105,6 +105,19 @@ tbody tr:hover{background:var(--glass)}
 .ms-actions button{flex:1;background:none;border:none;color:var(--blue);font-size:.74rem;font-weight:600;cursor:pointer;padding:.2rem 0}
 .ms-actions button:hover{text-decoration:underline}
 .fclear{background:rgba(207,25,15,.1);border:1px solid rgba(207,25,15,.35);color:#ff8a82;border-radius:8px;padding:.5rem;font-size:.78rem;font-weight:600;cursor:pointer}
+
+/* Raias operacionais por empresa */
+.raia-chip{font-size:.72rem;padding:.32rem .8rem;border-radius:20px;border:1px solid var(--glassb);background:transparent;color:var(--text);cursor:pointer;font-weight:600}
+.raia-chip.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.raia-chip.clr{background:rgba(207,25,15,.1);border-color:rgba(207,25,15,.35);color:#ff8a82;display:inline-flex;align-items:center;gap:.25rem}
+.raia-chip.clr svg{width:13px;height:13px}
+.raia-total{background:var(--glass);border:1px solid var(--glassb);border-radius:14px;padding:.9rem 1rem;margin-bottom:1rem}
+.raia-total .ttl{font-weight:700;margin-bottom:.6rem;font-size:.92rem}
+.raia-metric{background:var(--glass);border-radius:10px;padding:.5rem .65rem;min-width:90px;flex:1}
+.raia-metric .l{font-size:.66rem;opacity:.85;margin-bottom:2px}
+.raia-metric .v{font-size:1.05rem;font-weight:700}
+.raia-lane{background:var(--elev);border:1px solid var(--border);border-radius:12px;padding:.7rem .85rem}
+.raia-lane .hd{font-size:.85rem;font-weight:700;margin-bottom:.5rem}
 .loading{position:fixed;top:60px;right:18px;background:var(--navy2);color:#fff;padding:6px 12px;border-radius:8px;font-size:12px;z-index:550;display:none}
 
 /* Usuários */
@@ -186,6 +199,18 @@ tbody tr:hover{background:var(--glass)}
 
     <div id="view-ope" class="hidden">
       <div class="kpis" id="kpis_ope"></div>
+      <div class="card full" style="margin-bottom:1rem">
+        <h3><i data-lucide="layout-list"></i>Indicadores operacionais por empresa</h3>
+        <div class="raia-total" id="raia_total">
+          <div class="ttl" id="raia_total_title">Todas as empresas</div>
+          <div id="raia_total_metrics" style="display:flex;gap:.5rem;flex-wrap:wrap"></div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem;flex-wrap:wrap;gap:.5rem">
+          <span class="muted">Filtrar raias por empresa</span>
+          <div id="raia_chips" style="display:flex;gap:.4rem;flex-wrap:wrap"></div>
+        </div>
+        <div id="raia_lanes" style="display:flex;flex-direction:column;gap:.6rem"></div>
+      </div>
       <div class="card full" style="margin-bottom:1rem">
         <h3><i data-lucide="building-2"></i>Pendências por empresa</h3>
         <canvas id="ch_pend_emp" height="80"></canvas>
@@ -452,6 +477,7 @@ function renderPainel(){
     <div class="kpi blue"><div class="v">${d.recentes.length.toLocaleString('pt-BR')}</div><div class="l">Atendimentos recentes</div></div>`;
   const pe=d.pendencias_por_empresa||[];
   mk('ch_pend_emp',{type:'bar',data:{labels:pe.map(x=>dp('campanha',x[0])),datasets:[{label:'Pendências',data:pe.map(x=>x[1]),backgroundColor:C.warn}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
+  renderRaias(d.raias_por_empresa||[]);
   document.querySelector('#tab_pend tbody').innerHTML=d.pendencias.map(r=>`<tr><td class="cliente-nome">${r.cliente}</td><td>${r.cpf}</td><td>${dp('produto',r.product)}</td><td>${r.bank||'-'}</td><td><span class="pill pend">${dp('status',r.status)}</span></td><td>${dp('fase',r.stage)}</td><td>${r.tags.map(t=>`<span class="tag">${dp('tag',t)}</span>`).join('')}</td><td class="${agc(diasParado(r.updated_at))}">${diasParado(r.updated_at)} dia(s)</td></tr>`).join('')||'<tr><td colspan="8" class="muted">Sem pendências. 🎉</td></tr>';
   renderRecentes();
   if(window.lucide)lucide.createIcons();
@@ -464,6 +490,40 @@ function renderRecentes(){
   const cls=r=>PAGO.includes(r.status)?'pago':PEND.includes(r.status)?'pend':PERDA.includes(r.status)?'perda':'neutro';
   document.getElementById('ope_count').textContent=R.length.toLocaleString('pt-BR');
   document.querySelector('#tab_all tbody').innerHTML=R.map(r=>`<tr><td class="cliente-nome">${r.cliente}</td><td>${r.cpf}</td><td>${dp('produto',r.product)}</td><td>${dp('fase',r.stage)}</td><td>${r.status?`<span class="pill ${cls(r)}">${dp('status',r.status)}</span>`:'-'}</td><td>${r.bank||'-'}</td><td>${r.liquid_value?brl(r.liquid_value):'-'}</td><td>${r.tags.map(t=>`<span class="tag">${dp('tag',t)}</span>`).join('')}</td><td>${dataBR(r.updated_at)}</td></tr>`).join('');
+}
+// Raias operacionais por empresa (filtro local — não recarrega a API, só reexibe os dados já trazidos)
+let raiaFiltro=null;
+function raiaCor(n){if(!n)return{bg:'var(--glass)',fg:'var(--muted)'};if(n<=5)return{bg:'rgba(210,153,34,.16)',fg:'var(--warn)'};return{bg:'rgba(207,25,15,.16)',fg:'var(--red)'};}
+function raiaMetric(label,v,colorir){const c=colorir?raiaCor(v):{bg:'var(--glass)',fg:'var(--text)'};
+  return `<div class="raia-metric" style="background:${c.bg}"><div class="l" style="color:${c.fg}">${label}</div><div class="v" style="color:${c.fg}">${(v||0).toLocaleString('pt-BR')}</div></div>`;}
+function raiaMetricsRow(r,colorir){return raiaMetric('Leads ativos',r.ativos,false)+raiaMetric('Em pendência',r.pend,false)+raiaMetric('Parados 3d+',r.parados3d,colorir)+raiaMetric('Tags de risco',r.risco,colorir)+raiaMetric('Aguard. análise',r.risk_analysis,false)+raiaMetric('Formalização',r.formaliz,false);}
+function renderRaias(rows){
+  window._raiasData=rows.map(x=>({emp:x[0],ativos:x[1],pend:x[2],parados3d:x[3],risco:x[4],risk_analysis:x[5],formaliz:x[6]}));
+  if(raiaFiltro && !window._raiasData.some(r=>r.emp===raiaFiltro)) raiaFiltro=null;
+  const chips=document.getElementById('raia_chips');
+  chips.innerHTML=window._raiasData.map(r=>`<button class="raia-chip" data-emp="${r.emp.replace(/"/g,'&quot;')}">${dp('campanha',r.emp)}</button>`).join('')+
+    `<button class="raia-chip clr" id="raia_clear"><i data-lucide="x"></i>Limpar filtro</button>`;
+  chips.querySelectorAll('[data-emp]').forEach(b=>b.addEventListener('click',()=>{raiaFiltro=b.dataset.emp;renderRaiasView();}));
+  document.getElementById('raia_clear').addEventListener('click',()=>{raiaFiltro=null;renderRaiasView();});
+  renderRaiasView();
+  if(window.lucide)lucide.createIcons();
+}
+function renderRaiasView(){
+  const list=window._raiasData||[];
+  document.querySelectorAll('#raia_chips .raia-chip[data-emp]').forEach(b=>b.classList.toggle('on',b.dataset.emp===raiaFiltro));
+  document.getElementById('raia_clear').style.display=raiaFiltro?'inline-flex':'none';
+  if(raiaFiltro){
+    const r=list.find(x=>x.emp===raiaFiltro);
+    document.getElementById('raia_total_title').textContent=dp('campanha',raiaFiltro);
+    document.getElementById('raia_total_metrics').innerHTML=raiaMetricsRow(r,true);
+  }else{
+    const tot=list.reduce((a,r)=>({ativos:a.ativos+r.ativos,pend:a.pend+r.pend,parados3d:a.parados3d+r.parados3d,risco:a.risco+r.risco,risk_analysis:a.risk_analysis+r.risk_analysis,formaliz:a.formaliz+r.formaliz}),{ativos:0,pend:0,parados3d:0,risco:0,risk_analysis:0,formaliz:0});
+    document.getElementById('raia_total_title').textContent='Todas as empresas';
+    document.getElementById('raia_total_metrics').innerHTML=raiaMetricsRow(tot,false);
+  }
+  document.getElementById('raia_lanes').innerHTML=list.filter(r=>!raiaFiltro||r.emp===raiaFiltro).map(r=>
+    `<div class="raia-lane"><div class="hd">${dp('campanha',r.emp)}</div>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">${raiaMetricsRow(r,true)}</div></div>`).join('');
 }
 function setView(v){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.v===v));document.getElementById('view-ger').classList.toggle('hidden',v!=='ger');document.getElementById('view-ope').classList.toggle('hidden',v!=='ope');}
 
