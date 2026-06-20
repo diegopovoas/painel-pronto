@@ -389,8 +389,8 @@ function mk(id,cfg){const light=document.documentElement.getAttribute('data-them
     cfg.options.plugins.datalabels={color:'#fff',font:{size:10,weight:700,family:'Sora'},
       formatter:(v,ctx)=>{const arr=ctx.chart.data.datasets[0].data;const tot=arr.reduce((a,b)=>a+b,0);return tot?Math.round(v/tot*100)+'%':'';}};
   } else if(cfg.type==='bar'){
-    cfg.options.plugins.datalabels={color:'#fff',font:{size:10,weight:700,family:'Sora'},
-      anchor:'center',align:'center',formatter:v=>(v||0).toLocaleString('pt-BR')};
+    cfg.options.plugins.datalabels={color:tc.text,font:{size:10,weight:700,family:'Sora'},
+      anchor:'end',align:'end',clamp:true,formatter:v=>(v||0).toLocaleString('pt-BR')};
   }
   if(charts[id])charts[id].destroy();charts[id]=new Chart(document.getElementById(id),cfg);}
 
