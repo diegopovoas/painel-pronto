@@ -7,6 +7,7 @@
 <link rel="icon" type="image/png" href="favicon-pronto.png">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chartjs-plugin-datalabels/2.2.0/chartjs-plugin-datalabels.min.js"></script>
 <script src="https://unpkg.com/lucide@latest"></script>
 <style>
 :root{--bg:#080B12;--elev:#0E1421;--navy:#1A2B40;--navy2:#2C4366;--border:#22304A;
@@ -376,10 +377,21 @@ const DEPARA={
 };
 function dp(tipo,val){ return (DEPARA[tipo]&&DEPARA[tipo][val]) || val; }
 let charts={};
+if(window.ChartDataLabels)Chart.register(window.ChartDataLabels);
 function mk(id,cfg){const light=document.documentElement.getAttribute('data-theme')==='light';
   const tc={text:light?'#5D6880':'#9AA6BA',grid:light?'rgba(16,24,42,.08)':'rgba(255,255,255,.06)'};
   Chart.defaults.color=tc.text;Chart.defaults.font.family='Sora';cfg.options=cfg.options||{};cfg.options.responsive=true;
   cfg.options.scales=cfg.options.scales||{};['x','y'].forEach(a=>{cfg.options.scales[a]=cfg.options.scales[a]||{};cfg.options.scales[a].grid={color:tc.grid};cfg.options.scales[a].ticks={color:tc.text};});
+  const isLine=cfg.type==='line';
+  cfg.options.plugins=cfg.options.plugins||{};
+  if(isLine){cfg.options.plugins.datalabels={display:false};}
+  else if(cfg.type==='doughnut'){
+    cfg.options.plugins.datalabels={color:'#fff',font:{size:10,weight:700,family:'Sora'},
+      formatter:(v,ctx)=>{const arr=ctx.chart.data.datasets[0].data;const tot=arr.reduce((a,b)=>a+b,0);return tot?Math.round(v/tot*100)+'%':'';}};
+  } else if(cfg.type==='bar'){
+    cfg.options.plugins.datalabels={color:'#fff',font:{size:10,weight:700,family:'Sora'},
+      anchor:'center',align:'center',formatter:v=>(v||0).toLocaleString('pt-BR')};
+  }
   if(charts[id])charts[id].destroy();charts[id]=new Chart(document.getElementById(id),cfg);}
 
 function renderPainel(){
