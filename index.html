@@ -385,13 +385,10 @@ function dp(tipo,val){ return (DEPARA[tipo]&&DEPARA[tipo][val]) || val; }
 let charts={};
 function tcText(){return document.documentElement.getAttribute('data-theme')==='light'?'#5D6880':'#9AA6BA';}
 function numAbbr(v){v=v||0;const abs=Math.abs(v);
-  if(abs>=1e6)return (v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'MM';
-  if(abs>=1e3)return (v/1e3).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'mil';
+  if(abs>=1e6)return Math.round(v/1e6)+'MM';
+  if(abs>=1e3)return Math.round(v/1e3)+'k';
   return v.toLocaleString('pt-BR');}
-function brlAbbr(v){v=v||0;const abs=Math.abs(v);
-  if(abs>=1e6)return 'R$ '+(v/1e6).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'MM';
-  if(abs>=1e3)return 'R$ '+(v/1e3).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'mil';
-  return brl(v);}
+function brlAbbr(v){return numAbbr(v);}
 if(window.ChartDataLabels)Chart.register(window.ChartDataLabels);
 function mk(id,cfg){const light=document.documentElement.getAttribute('data-theme')==='light';
   const tc={text:light?'#5D6880':'#9AA6BA',grid:light?'rgba(16,24,42,.08)':'rgba(255,255,255,.06)'};
