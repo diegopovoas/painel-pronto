@@ -255,8 +255,6 @@ const selections={produto:new Set(),banco:new Set(),campanha:new Set(),status:ne
 function H(t){return {apikey:ANON,'Content-Type':'application/json',...(t?{Authorization:'Bearer '+t}:{})};}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2600);}
 const brl=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
-const dataBR=s=>s?s.slice(0,10).split('-').reverse().join('/'):'-';
-const diasParado=s=>s?Math.floor((Date.now()-new Date(s).getTime())/86400000):0;
 
 // Tema + acessibilidade
 function applyTheme(t){document.documentElement.setAttribute('data-theme',t);localStorage.setItem('nova_theme',t);if(DADOS)renderPainel();}
@@ -474,9 +472,9 @@ function renderPainel(){
 
   // Operacional
   document.getElementById('kpis_ope').innerHTML=`
-    <div class="kpi warn"><div class="v">${d.pendencias.length}</div><div class="l">Pendências (na lista)</div></div>
-    <div class="kpi red"><div class="v">${d.pendencias.filter(r=>diasParado(r.updated_at)>=3).length}</div><div class="l">Parados há 3+ dias</div></div>
-    <div class="kpi blue"><div class="v">${d.recentes.length.toLocaleString('pt-BR')}</div><div class="l">Atendimentos recentes</div></div>`;
+    <div class="kpi warn"><div class="v">${d.kpis.pend.toLocaleString('pt-BR')}</div><div class="l">Em pendência</div></div>
+    <div class="kpi red"><div class="v">${(d.ope_pend_3d||0).toLocaleString('pt-BR')}</div><div class="l">Parados há 3+ dias</div></div>
+    <div class="kpi blue"><div class="v">${(d.ope_rec_24h||0).toLocaleString('pt-BR')}</div><div class="l">Atendimentos (24h)</div></div>`;
   renderRaias(d.raias_por_empresa||[]);
   if(window.lucide)lucide.createIcons();
 }
