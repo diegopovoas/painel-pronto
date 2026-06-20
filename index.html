@@ -50,7 +50,8 @@ button{font-family:inherit;cursor:pointer}input,select{font-family:inherit}
 .tab i{width:17px;height:17px}.tab.active{background:var(--navy);color:var(--text);border-color:var(--navy2)}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:.85rem;margin-bottom:1.25rem}
 .kpi{background:var(--glass);border:1px solid var(--glassb);border-radius:18px;padding:1.1rem;backdrop-filter:blur(18px) saturate(120%);box-shadow:var(--shadow)}
-.kpi .v{font-size:1.7rem;font-weight:800}.kpi .l{color:var(--muted);font-size:.74rem;margin-top:.2rem}
+.kpi .v{font-size:1.5rem;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums;letter-spacing:-.01em}.kpi .l{color:var(--muted);font-size:.74rem;margin-top:.25rem}
+.kpi .v.sm{font-size:1.15rem}
 .kpi.blue .v{color:var(--blue)}.kpi.red .v{color:var(--red)}.kpi.ok .v{color:var(--ok)}.kpi.warn .v{color:var(--warn)}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(370px,1fr));gap:1rem}
 .card{background:var(--glass);border:1px solid var(--glassb);border-radius:18px;padding:1.1rem;backdrop-filter:blur(18px) saturate(120%);box-shadow:var(--shadow)}
@@ -230,7 +231,7 @@ let sess=null, DADOS=null, _lastUpd=null, _filtrosProntos=false;
 const selections={produto:new Set(),banco:new Set(),campanha:new Set(),status:new Set(),fase:new Set(),tag:new Set()};
 function H(t){return {apikey:ANON,'Content-Type':'application/json',...(t?{Authorization:'Bearer '+t}:{})};}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.style.display='block';setTimeout(()=>t.style.display='none',2600);}
-const brl=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const brl=v=>'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
 const dataBR=s=>s?s.slice(0,10).split('-').reverse().join('/'):'-';
 const diasParado=s=>s?Math.floor((Date.now()-new Date(s).getTime())/86400000):0;
 
@@ -383,7 +384,7 @@ function renderPainel(){
     <div class="kpi blue"><div class="v">${k.leads.toLocaleString('pt-BR')}</div><div class="l">Leads</div></div>
     <div class="kpi"><div class="v">${k.propostas.toLocaleString('pt-BR')}</div><div class="l">Propostas</div></div>
     <div class="kpi ok"><div class="v">${k.pagas.toLocaleString('pt-BR')}</div><div class="l">Pagas (liquidadas)</div></div>
-    <div class="kpi ok"><div class="v" style="font-size:1.25rem">${brl(k.valor)}</div><div class="l">Valor liquidado</div></div>
+    <div class="kpi ok"><div class="v sm">${brl(k.valor)}</div><div class="l">Valor liquidado</div></div>
     <div class="kpi warn"><div class="v">${k.pend.toLocaleString('pt-BR')}</div><div class="l">Em pendência</div></div>
     <div class="kpi red"><div class="v">${k.perdas.toLocaleString('pt-BR')}</div><div class="l">Perdidos</div></div>
     <div class="kpi"><div class="v">${k.taxa}%</div><div class="l">Conversão proposta→paga</div></div>`;
