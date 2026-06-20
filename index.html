@@ -385,7 +385,7 @@ function dp(tipo,val){ return (DEPARA[tipo]&&DEPARA[tipo][val]) || val; }
 let charts={};
 function tcText(){return document.documentElement.getAttribute('data-theme')==='light'?'#5D6880':'#9AA6BA';}
 function numAbbr(v){v=v||0;const abs=Math.abs(v);
-  if(abs>=1e6)return Math.round(v/1e6)+'MM';
+  if(abs>=1e6)return (Math.round(v/1e5)/10).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:1})+'MM';
   if(abs>=1e3)return Math.round(v/1e3)+'k';
   return v.toLocaleString('pt-BR');}
 function brlAbbr(v){return numAbbr(v);}
@@ -422,7 +422,7 @@ function renderPainel(){
     options:{aspectRatio:1.6,plugins:{legend:{display:false},datalabels:{color:tcText(),font:{size:9,weight:600,family:'Sora'},anchor:'end',align:'end',clamp:true,formatter:v=>numAbbr(v)},
       tooltip:{callbacks:{label:ctx=>brl(ctx.parsed.y)}}}}});
   mk('ch_pag_dia',{type:'bar',data:{labels:pg_dia.map(x=>x[0]),datasets:[{data:pg_dia.map(x=>x[1]),backgroundColor:C.blue}]},
-    options:{plugins:{legend:{display:false},datalabels:{color:tcText(),font:{size:9,weight:600,family:'Sora'},anchor:'end',align:'end',clamp:true,formatter:v=>numAbbr(v)},
+    options:{layout:{padding:{top:20}},scales:{y:{suggestedMax:Math.max(...pg_dia.map(x=>x[1]),0)*1.15}},plugins:{legend:{display:false},datalabels:{color:tcText(),font:{size:9,weight:600,family:'Sora'},anchor:'end',align:'end',clamp:true,formatter:v=>numAbbr(v)},
       tooltip:{callbacks:{label:ctx=>brl(ctx.parsed.y)}}}}});
   mk('ch_proj_emp',{type:'bar',data:{labels:pj_emp.map(x=>dp('campanha',x[0])),datasets:[
     {label:'Realizado',data:pj_emp.map(x=>x[1]),backgroundColor:C.ok},
