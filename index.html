@@ -181,6 +181,10 @@ tbody tr:hover{background:var(--glass)}
     <div id="view-ope" class="hidden">
       <div class="kpis" id="kpis_ope"></div>
       <div class="card full" style="margin-bottom:1rem">
+        <h3><i data-lucide="building-2"></i>Pendências por empresa</h3>
+        <canvas id="ch_pend_emp" height="80"></canvas>
+      </div>
+      <div class="card full" style="margin-bottom:1rem">
         <h3><i data-lucide="alert-triangle"></i>Fila de pendências</h3>
         <div class="muted" style="margin-bottom:.6rem">Casos parados, do mais antigo ao mais novo.</div>
         <div class="tablewrap"><table id="tab_pend"><thead><tr><th>Cliente</th><th>CPF</th><th>Produto</th><th>Banco</th><th>Status</th><th>Fase</th><th>Etiquetas</th><th>Parado há</th></tr></thead><tbody></tbody></table></div>
@@ -409,6 +413,8 @@ function renderPainel(){
     <div class="kpi warn"><div class="v">${d.pendencias.length}</div><div class="l">Pendências (na lista)</div></div>
     <div class="kpi red"><div class="v">${d.pendencias.filter(r=>diasParado(r.updated_at)>=3).length}</div><div class="l">Parados há 3+ dias</div></div>
     <div class="kpi blue"><div class="v">${d.recentes.length.toLocaleString('pt-BR')}</div><div class="l">Atendimentos recentes</div></div>`;
+  const pe=d.pendencias_por_empresa||[];
+  mk('ch_pend_emp',{type:'bar',data:{labels:pe.map(x=>dp('campanha',x[0])),datasets:[{label:'Pendências',data:pe.map(x=>x[1]),backgroundColor:C.warn}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
   document.querySelector('#tab_pend tbody').innerHTML=d.pendencias.map(r=>`<tr><td class="cliente-nome">${r.cliente}</td><td>${r.cpf}</td><td>${dp('produto',r.product)}</td><td>${r.bank||'-'}</td><td><span class="pill pend">${dp('status',r.status)}</span></td><td>${dp('fase',r.stage)}</td><td>${r.tags.map(t=>`<span class="tag">${dp('tag',t)}</span>`).join('')}</td><td class="${agc(diasParado(r.updated_at))}">${diasParado(r.updated_at)} dia(s)</td></tr>`).join('')||'<tr><td colspan="8" class="muted">Sem pendências. 🎉</td></tr>';
   renderRecentes();
   if(window.lucide)lucide.createIcons();
