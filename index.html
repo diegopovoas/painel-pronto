@@ -382,6 +382,7 @@ function mk(id,cfg){const light=document.documentElement.getAttribute('data-them
   const tc={text:light?'#5D6880':'#9AA6BA',grid:light?'rgba(16,24,42,.08)':'rgba(255,255,255,.06)'};
   Chart.defaults.color=tc.text;Chart.defaults.font.family='Sora';cfg.options=cfg.options||{};cfg.options.responsive=true;
   cfg.options.scales=cfg.options.scales||{};['x','y'].forEach(a=>{cfg.options.scales[a]=cfg.options.scales[a]||{};cfg.options.scales[a].grid={color:tc.grid};cfg.options.scales[a].ticks={color:tc.text};});
+  if(cfg.options.indexAxis==='y')cfg.options.scales.y.ticks.autoSkip=false;
   const isLine=cfg.type==='line';
   cfg.options.plugins=cfg.options.plugins||{};
   if(isLine){cfg.options.plugins.datalabels={display:false};}
@@ -405,12 +406,12 @@ function renderPainel(){
     <div class="kpi red"><div class="v">${k.perdas.toLocaleString('pt-BR')}</div><div class="l">Perdidos</div></div>
     <div class="kpi"><div class="v">${k.taxa}%</div><div class="l">Conversão proposta→paga</div></div>`;
   mk('ch_funil',{type:'bar',data:{labels:['Leads','Simulou/Ofertou','Proposta','Pagas'],datasets:[{data:d.funil,backgroundColor:[C.blue,C.blueLt,C.warn,C.ok]}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
-  mk('ch_fase',{type:'bar',data:{labels:d.por_fase.map(x=>dp('fase',x[0])),datasets:[{data:d.por_fase.map(x=>x[1]),backgroundColor:C.blue}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
-  mk('ch_status',{type:'bar',data:{labels:d.por_status.map(x=>dp('status',x[0])),datasets:[{data:d.por_status.map(x=>x[1]),backgroundColor:d.por_status.map(x=>PAGO.includes(x[0])?C.ok:PEND.includes(x[0])?C.warn:PERDA.includes(x[0])?C.red:C.blue)}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
+  mk('ch_fase',{type:'bar',data:{labels:d.por_fase.map(x=>dp('fase',x[0])),datasets:[{data:d.por_fase.map(x=>x[1]),backgroundColor:C.blue}]},options:{indexAxis:'y',aspectRatio:1.1,plugins:{legend:{display:false}}}});
+  mk('ch_status',{type:'bar',data:{labels:d.por_status.map(x=>dp('status',x[0])),datasets:[{data:d.por_status.map(x=>x[1]),backgroundColor:d.por_status.map(x=>PAGO.includes(x[0])?C.ok:PEND.includes(x[0])?C.warn:PERDA.includes(x[0])?C.red:C.blue)}]},options:{indexAxis:'y',aspectRatio:1.4,plugins:{legend:{display:false}}}});
   mk('ch_perda',{type:'doughnut',data:{labels:d.motivos.map(x=>dp('motivo',x[0])),datasets:[{data:d.motivos.map(x=>x[1]),backgroundColor:[C.red,'#E5564D','#9A1009',C.navy,C.muted,C.blue,C.navyD,C.blueLt]}]},options:{plugins:{legend:{position:'right'}},scales:{x:{display:false},y:{display:false}}}});
   mk('ch_prod',{type:'doughnut',data:{labels:d.por_produto.map(x=>dp('produto',x[0])),datasets:[{data:d.por_produto.map(x=>x[1]),backgroundColor:PAL}]},options:{plugins:{legend:{position:'right'}},scales:{x:{display:false},y:{display:false}}}});
   mk('ch_banco',{type:'bar',data:{labels:d.por_banco.map(x=>x[0]),datasets:[{data:d.por_banco.map(x=>x[1]),backgroundColor:C.navy}]},options:{plugins:{legend:{display:false}}}});
-  mk('ch_camp',{type:'bar',data:{labels:d.por_campanha.map(x=>dp('campanha',x[0])),datasets:[{data:d.por_campanha.map(x=>x[1]),backgroundColor:C.blueLt}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
+  mk('ch_camp',{type:'bar',data:{labels:d.por_campanha.map(x=>dp('campanha',x[0])),datasets:[{data:d.por_campanha.map(x=>x[1]),backgroundColor:C.blueLt}]},options:{indexAxis:'y',aspectRatio:2,plugins:{legend:{display:false}}}});
   mk('ch_time',{type:'line',data:{labels:d.timeline.map(x=>x[0]),datasets:[{label:'Leads',data:d.timeline.map(x=>x[1]),borderColor:C.blue,backgroundColor:'rgba(61,123,255,.15)',fill:true,tension:.3,pointRadius:1}]},options:{plugins:{legend:{display:false}}}});
   const h=d.historico||[];
   mk('ch_hist',{type:'line',data:{labels:h.map(x=>x[0]),datasets:[
