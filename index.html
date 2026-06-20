@@ -151,7 +151,7 @@ tbody tr:hover{background:var(--glass)}
       <div><label>Período</label><select id="f_periodo"><option value="0">Tudo</option><option value="1">Hoje</option><option value="7">Últimos 7 dias</option><option value="30">Últimos 30 dias</option></select></div>
       <div class="ms" data-key="produto"><label>Produto</label></div>
       <div class="ms" data-key="banco"><label>Banco</label></div>
-      <div class="ms" data-key="campanha"><label>Campanha</label></div>
+      <div class="ms" data-key="campanha"><label>Empresa</label></div>
       <div class="ms" data-key="status"><label>Status</label></div>
       <div class="ms" data-key="fase"><label>Fase</label></div>
       <div class="ms" data-key="tag"><label>Etiqueta</label></div>
@@ -171,7 +171,7 @@ tbody tr:hover{background:var(--glass)}
         <div class="card"><h3><i data-lucide="trending-down"></i>Motivos de perda</h3><canvas id="ch_perda"></canvas></div>
         <div class="card"><h3><i data-lucide="package"></i>Leads por produto</h3><canvas id="ch_prod"></canvas></div>
         <div class="card"><h3><i data-lucide="landmark"></i>Propostas por banco</h3><canvas id="ch_banco"></canvas></div>
-        <div class="card"><h3><i data-lucide="megaphone"></i>Leads por campanha</h3><canvas id="ch_camp"></canvas></div>
+        <div class="card"><h3><i data-lucide="megaphone"></i>Leads por empresa</h3><canvas id="ch_camp"></canvas></div>
         <div class="card full"><h3><i data-lucide="line-chart"></i>Leads por hora (48h)</h3><canvas id="ch_time"></canvas></div>
         <div class="card full"><h3><i data-lucide="calendar-range"></i>Evolução diária (histórico permanente)</h3><canvas id="ch_hist"></canvas></div>
       </div>
@@ -366,7 +366,8 @@ const DEPARA={
     baixa_renda:'Crédito pessoal baixa renda',cancelado:'Cancelado',cliente_contata_banco:'Cliente contactando banco',
     consignado_publico:'Consignado público',credito_cartao:'Cartão de crédito',crefaz_energia:'CREFAZ',
     disparo:'Em disparo',factas_naolocalizados:'Não localizando proposta',nao_optante:'Cliente não optante',
-    problema:'Pendente',seguro_saude:'Ofertando seguro saúde',sem_margem:'Cliente não possui margem'}
+    problema:'Pendente',seguro_saude:'Ofertando seguro saúde',sem_margem:'Cliente não possui margem'},
+  campanha:{22206:'Pronto J17',23691:'Pronto IMD',26134:'Sethi',26529:'Fidem',27024:'CDC','(sem empresa)':'Sem empresa'}
 };
 function dp(tipo,val){ return (DEPARA[tipo]&&DEPARA[tipo][val]) || val; }
 let charts={};
@@ -392,7 +393,7 @@ function renderPainel(){
   mk('ch_perda',{type:'doughnut',data:{labels:d.motivos.map(x=>dp('motivo',x[0])),datasets:[{data:d.motivos.map(x=>x[1]),backgroundColor:[C.red,'#E5564D','#9A1009',C.navy,C.muted,C.blue,C.navyD,C.blueLt]}]},options:{plugins:{legend:{position:'right'}},scales:{x:{display:false},y:{display:false}}}});
   mk('ch_prod',{type:'doughnut',data:{labels:d.por_produto.map(x=>dp('produto',x[0])),datasets:[{data:d.por_produto.map(x=>x[1]),backgroundColor:PAL}]},options:{plugins:{legend:{position:'right'}},scales:{x:{display:false},y:{display:false}}}});
   mk('ch_banco',{type:'bar',data:{labels:d.por_banco.map(x=>x[0]),datasets:[{data:d.por_banco.map(x=>x[1]),backgroundColor:C.navy}]},options:{plugins:{legend:{display:false}}}});
-  mk('ch_camp',{type:'bar',data:{labels:d.por_campanha.map(x=>x[0]),datasets:[{data:d.por_campanha.map(x=>x[1]),backgroundColor:C.blueLt}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
+  mk('ch_camp',{type:'bar',data:{labels:d.por_campanha.map(x=>dp('campanha',x[0])),datasets:[{data:d.por_campanha.map(x=>x[1]),backgroundColor:C.blueLt}]},options:{indexAxis:'y',plugins:{legend:{display:false}}}});
   mk('ch_time',{type:'line',data:{labels:d.timeline.map(x=>x[0]),datasets:[{label:'Leads',data:d.timeline.map(x=>x[1]),borderColor:C.blue,backgroundColor:'rgba(61,123,255,.15)',fill:true,tension:.3,pointRadius:1}]},options:{plugins:{legend:{display:false}}}});
   const h=d.historico||[];
   mk('ch_hist',{type:'line',data:{labels:h.map(x=>x[0]),datasets:[
