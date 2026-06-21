@@ -169,6 +169,7 @@ tbody tr:hover{background:var(--glass)}
     <div class="naomap" id="naomap" style="display:none"></div>
     <div class="fbar" id="fbar">
       <div><label>Período</label><select id="f_periodo"><option value="0">Tudo</option><option value="1">Hoje</option><option value="7">Últimos 7 dias</option><option value="30">Últimos 30 dias</option></select></div>
+      <div title="Define qual data conta pra 'Pagas' e 'Valor liquidado': o dia em que o contrato foi pago, ou o dia em que o lead entrou"><label>Pagas/Valor por</label><select id="f_base"><option value="pagamento">Data do pagamento</option><option value="lead">Data do lead</option></select></div>
       <div class="ms" data-key="produto"><label>Produto</label></div>
       <div class="ms" data-key="banco"><label>Banco</label></div>
       <div class="ms" data-key="campanha"><label>Empresa</label></div>
@@ -289,6 +290,7 @@ function queryFiltros(){
   const p=new URLSearchParams();
   for(const k in selections){ if(selections[k].size) p.set(k,[...selections[k]].join(',')); }
   const per=document.getElementById('f_periodo'); if(per&&per.value!=='0') p.set('periodo',per.value);
+  const bs=document.getElementById('f_base'); if(bs&&bs.value!=='pagamento') p.set('base',bs.value);
   return p.toString();
 }
 // Carrega dados da API (filtrados ao vivo no banco)
@@ -347,6 +349,7 @@ function montarFiltros(opc){
   });
   document.addEventListener('click',()=>document.querySelectorAll('.ms-panel.open').forEach(p=>{p.classList.remove('open');p.closest('.ms').classList.remove('aberto');}));
   document.getElementById('f_periodo').addEventListener('change',carregarDados);
+  document.getElementById('f_base').addEventListener('change',carregarDados);
   if(window.lucide) lucide.createIcons();
 }
 function limparFiltros(){
@@ -356,6 +359,7 @@ function limparFiltros(){
   document.querySelectorAll('.fbar .lbl').forEach(l=>l.textContent='Todos');
   document.querySelectorAll('.fbar .ms-btn').forEach(b=>b.classList.remove('tem'));
   document.getElementById('f_periodo').value='0';
+  document.getElementById('f_base').value='pagamento';
   carregarDados();
 }
 
