@@ -195,8 +195,9 @@ tbody tr:hover{background:var(--glass)}
         <div class="card"><h3><i data-lucide="clipboard-list"></i>Status das propostas</h3><canvas id="ch_status"></canvas></div>
         <div class="card"><h3><i data-lucide="trending-down"></i>Motivos de perda</h3><canvas id="ch_perda"></canvas></div>
         <div class="card"><h3><i data-lucide="package"></i>Leads por produto</h3><canvas id="ch_prod"></canvas></div>
-        <div class="card"><h3><i data-lucide="landmark"></i>Propostas por banco</h3><canvas id="ch_banco"></canvas></div>
         <div class="card"><h3><i data-lucide="megaphone"></i>Leads por empresa</h3><canvas id="ch_camp"></canvas></div>
+        <div class="card"><h3><i data-lucide="landmark"></i>Propostas por banco</h3><canvas id="ch_banco"></canvas></div>
+        <div class="card"><h3><i data-lucide="package-search"></i>Propostas por produto</h3><canvas id="ch_prod_props"></canvas></div>
         <div class="card full"><h3><i data-lucide="line-chart"></i>Leads por hora (48h)</h3><canvas id="ch_time"></canvas></div>
         <div class="card full"><h3><i data-lucide="calendar-range"></i>Leads por dia (histórico permanente)</h3><canvas id="ch_hist"></canvas></div>
       </div>
@@ -462,8 +463,9 @@ function renderPainel(){
   mk('ch_status',{type:'bar',data:{labels:d.por_status.map(x=>dp('status',x[0])),datasets:[{data:d.por_status.map(x=>x[1]),backgroundColor:d.por_status.map(x=>PAGO.includes(x[0])?C.ok:PEND.includes(x[0])?C.warn:PERDA.includes(x[0])?C.red:C.blue)}]},options:{indexAxis:'y',aspectRatio:1.4,plugins:{legend:{display:false}}}});
   mk('ch_perda',{type:'doughnut',data:{labels:d.motivos.map(x=>dp('motivo',x[0])),datasets:[{data:d.motivos.map(x=>x[1]),backgroundColor:[C.red,'#E5564D','#9A1009',C.navy,C.muted,C.blue,C.navyD,C.blueLt]}]},options:{plugins:{legend:{position:'right'}},scales:{x:{display:false},y:{display:false}}}});
   mk('ch_prod',{type:'doughnut',data:{labels:d.por_produto.map(x=>dp('produto',x[0])),datasets:[{data:d.por_produto.map(x=>x[1]),backgroundColor:PAL}]},options:{plugins:{legend:{position:'right'}},scales:{x:{display:false},y:{display:false}}}});
-  mk('ch_banco',{type:'bar',data:{labels:d.por_banco.map(x=>x[0]),datasets:[{data:d.por_banco.map(x=>x[1]),backgroundColor:C.navy}]},options:{plugins:{legend:{display:false}}}});
   mk('ch_camp',{type:'bar',data:{labels:d.por_campanha.map(x=>dp('campanha',x[0])),datasets:[{data:d.por_campanha.map(x=>x[1]),backgroundColor:C.blueLt}]},options:{indexAxis:'y',aspectRatio:2,plugins:{legend:{display:false}}}});
+  mk('ch_banco',{type:'bar',data:{labels:d.por_banco.map(x=>x[0]),datasets:[{data:d.por_banco.map(x=>x[1]),backgroundColor:C.navy}]},options:{plugins:{legend:{display:false}}}});
+  mk('ch_prod_props',{type:'bar',data:{labels:(d.por_produto_proposta||[]).map(x=>dp('produto',x[0])),datasets:[{data:(d.por_produto_proposta||[]).map(x=>x[1]),backgroundColor:C.blueLt}]},options:{plugins:{legend:{display:false}}}});
   mk('ch_time',{type:'line',data:{labels:d.timeline.map(x=>x[0]),datasets:[{label:'Leads',data:d.timeline.map(x=>x[1]),borderColor:C.blue,backgroundColor:'rgba(61,123,255,.15)',fill:true,tension:.3,pointRadius:1}]},options:{plugins:{legend:{display:false}}}});
   const h=d.historico||[];
   mk('ch_hist',{type:'line',data:{labels:h.map(x=>x[0]),datasets:[
