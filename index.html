@@ -161,6 +161,7 @@ tbody tr:hover{background:var(--glass)}
       <button class="tbtn" onclick="toggleTheme()" id="themebtn">Tema</button>
       <span id="whoami"></span>
       <button class="tbtn" id="btnusers" onclick="abrirUsuarios()" style="display:none">Usuários</button>
+      <button class="tbtn" onclick="trocarMinhaSenha()">Senha</button>
       <button class="tbtn red" onclick="sair()">Sair</button>
     </div>
   </div>
@@ -284,6 +285,31 @@ async function refresh(){if(!sess?.rt)return false;
   localStorage.setItem(SESS_KEY,JSON.stringify(sess));return true;}
 async function tok(){if(sess&&Date.now()>sess.exp-60000)await refresh();return sess?.t;}
 function sair(){localStorage.removeItem(SESS_KEY);sess=null;location.reload();}
+function trocarMinhaSenha(){
+  if(!sess){alert('Faça login primeiro.');return;}
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(5,8,18,.78);display:flex;align-items:center;justify-content:center;z-index:9999;padding:20px';
+  ov.innerHTML='<div style="width:360px;max-width:100%;background:var(--navy);border:1px solid var(--border);border-radius:16px;padding:24px">'
+    +'<div style="font-weight:700;font-size:15px;margin-bottom:16px">Alterar minha senha</div>'
+    +'<div id="ms-err" style="display:none;background:rgba(207,25,15,.13);border:1px solid rgba(207,25,15,.4);color:#ff8a82;border-radius:8px;padding:8px 12px;font-size:12px;margin-bottom:12px"></div>'
+    +'<label style="font-size:11px;color:var(--muted)">Nova senha</label><input id="ms-n1" type="password" autocomplete="new-password" style="width:100%;margin:4px 0 12px;padding:10px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);box-sizing:border-box">'
+    +'<label style="font-size:11px;color:var(--muted)">Repita a nova senha</label><input id="ms-n2" type="password" autocomplete="new-password" style="width:100%;margin:4px 0 16px;padding:10px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);box-sizing:border-box">'
+    +'<div style="display:flex;gap:8px"><button id="ms-cancel" class="tbtn" style="flex:1">Cancelar</button><button id="ms-ok" class="tbtn" style="flex:1;background:var(--blue);color:#fff;border-color:var(--blue)">Salvar</button></div>'
+    +'</div>';
+  document.body.appendChild(ov);
+  const $=id=>document.getElementById(id);
+  $('ms-cancel').onclick=()=>ov.remove();
+  $('ms-ok').onclick=async()=>{
+    const n1=$('ms-n1').value,n2=$('ms-n2').value,err=$('ms-err');
+    if(n1.length<6){err.textContent='A senha precisa ter pelo menos 6 caracteres';err.style.display='block';return;}
+    if(n1!==n2){err.textContent='As senhas não conferem';err.style.display='block';return;}
+    try{
+      const r=await fetch(SUPA_URL+'/auth/v1/user',{method:'PUT',headers:H(sess.t),body:JSON.stringify({password:n1})});
+      if(r.ok){ov.remove();alert('Senha alterada com sucesso!');}
+      else{const j=await r.json().catch(()=>({}));err.textContent='Erro: '+(j.msg||j.error_description||('HTTP '+r.status));err.style.display='block';}
+    }catch(e){err.textContent='Erro: '+e.message;err.style.display='block';}
+  };
+}
 
 // Monta a query string a partir dos filtros selecionados
 function queryFiltros(){
