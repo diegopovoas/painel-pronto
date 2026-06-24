@@ -428,7 +428,7 @@ function dp(tipo,val){ return (DEPARA[tipo]&&DEPARA[tipo][val]) || val; }
 // Avisa quando aparece um código novo (empresa/produto/fase/status/tag) que ainda não tem nome traduzido no DEPARA
 const TIPOS_NAOMAP={produto:'Produto',campanha:'Empresa',fase:'Fase',status:'Status',tag:'Etiqueta'};
 function checkNaoMapeados(opcoes){
-  if(!sess||sess.email!=='admin@novapromotora.com'){ document.getElementById('naomap').style.display='none'; return; }
+  if(!sess||!souAdmin){ document.getElementById('naomap').style.display='none'; return; }
   const achados=[];
   for(const tipo in TIPOS_NAOMAP){
     (opcoes[tipo]||[]).forEach(v=>{ if(v && !(DEPARA[tipo]&&DEPARA[tipo][v])) achados.push(TIPOS_NAOMAP[tipo]+': '+v); });
@@ -565,9 +565,11 @@ function renderRaiasView(){
 function setView(v){document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.v===v));document.getElementById('view-ger').classList.toggle('hidden',v!=='ger');document.getElementById('view-ope').classList.toggle('hidden',v!=='ope');}
 
 // Perfil + boot
+let souAdmin=false;
 async function carregarPerfil(){const t=await tok();
   const r=await fetch(SUPA_URL+'/rest/v1/rpc/is_pronto_admin',{method:'POST',headers:H(t),body:'{}'});
-  document.getElementById('btnusers').style.display=(r.ok&&await r.json())?'':'none';
+  souAdmin=r.ok&&await r.json();
+  document.getElementById('btnusers').style.display=souAdmin?'':'none';
   document.getElementById('whoami').textContent=sess.email;}
 async function iniciar(){
   document.getElementById('login').classList.add('hidden');document.getElementById('app').classList.remove('hidden');
